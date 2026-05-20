@@ -1,7 +1,6 @@
 // 全局变量
 const coin = document.getElementById('coin');
 const result = document.getElementById('result');
-const flipBtn = document.getElementById('flipBtn');
 const clearBtn = document.getElementById('clearBtn');
 const historyList = document.getElementById('historyList');
 const frontTextInput = document.getElementById('frontText');
@@ -53,26 +52,44 @@ function flipCoin() {
     // 播放音效
     playFlipSound();
     
-    // 重置结果显示
-    result.textContent = "抛掷中...";
+    // 重置结果显示（如果元素存在）
+    if (result) {
+        result.textContent = "抛掷中...";
+    }
+    
+    // 获取当前硬币的旋转角度
+    const currentTransform = window.getComputedStyle(coin).getPropertyValue('transform');
+    let currentRotation = 0;
+    
+    // 解析当前旋转角度
+    if (currentTransform && currentTransform !== 'none') {
+        const values = currentTransform.split('(')[1].split(')')[0].split(',');
+        const a = parseFloat(values[0]);
+        const b = parseFloat(values[1]);
+        currentRotation = Math.round(Math.atan2(b, a) * (180 / Math.PI));
+    }
     
     // 随机决定正反面
     const isHeads = Math.random() < 0.5;
-    const rotation = isHeads ? 2160 : 1980; // 360*6 或 360*5.5
+    const targetRotation = isHeads ? 0 : 180;
+    const totalRotation = currentRotation + (360 * 6) + (targetRotation - ((currentRotation % 360) + 360) % 360);
     
     // 设置动画变量
-    coin.style.setProperty('--flip-rotation', `${rotation}deg`);
+    coin.style.setProperty('--flip-rotation', `${totalRotation}deg`);
     coin.classList.add('flipping');
     
     // 动画结束后显示结果
     setTimeout(() => {
-        const frontText = frontTextInput.value || "正面";
-        const backText = backTextInput.value || "反面";
+        const frontText = frontTextInput ? (frontTextInput.value || "正面") : "正面";
+        const backText = backTextInput ? (backTextInput.value || "反面") : "反面";
         const resultText = isHeads ? frontText : backText;
         const resultType = isHeads ? "正面" : "反面";
         
-        result.textContent = `结果: ${resultType} → ${resultText}`;
-        result.style.color = isHeads ? "#ffc107" : "#6c757d";
+        // 更新结果显示（如果元素存在）
+        if (result) {
+            result.textContent = `结果: ${resultType} → ${resultText}`;
+            result.style.color = isHeads ? "#ffc107" : "#6c757d";
+        }
         
         // 更新历史记录
         flipCount++;
@@ -83,6 +100,9 @@ function flipCoin() {
         
         isFlipping = false;
         coin.classList.remove('flipping');
+        
+        // 保持硬币在结果那一面
+        coin.style.transform = `rotateY(${targetRotation}deg)`;
     }, 1500);
 }
 
@@ -110,8 +130,10 @@ function clearHistory() {
     flipCount = 0;
     history = [];
     updateHistory();
-    result.textContent = "点击硬币开始抛掷";
-    result.style.color = "";
+    if (result) {
+        result.textContent = "点击硬币开始抛掷";
+        result.style.color = "";
+    }
     
     // 可选：清空后自动关闭弹窗
     // closeModal();
@@ -131,7 +153,6 @@ function clearHistory() {
 
 // 事件监听
 coinContainer.addEventListener('click', flipCoin);
-flipBtn.addEventListener('click', flipCoin);
 clearBtn.addEventListener('click', clearHistory);
 // themeToggle.addEventListener('click', toggleTheme); // 主题切换已注释
 

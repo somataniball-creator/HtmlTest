@@ -6,7 +6,7 @@
     --btn-bg: #0069d9;
     --btn-hover: #0056b3;
     --coin-front: rgb(247,148,30);
-    --coin-back: rgb(200,120,25);
+    --coin-back: rgb(150,150,150);
     --shadow: 0 4px 8px rgba(0,0,0,0.3);
     transition: all 0.3s ease;
 }
@@ -101,7 +101,7 @@ h1 {
 }
 
 .coin .back {
-    background: radial-gradient(circle, var(--coin-back) 0%, rgb(180,110,20) 100%);
+    background: radial-gradient(circle, var(--coin-back) 0%, rgb(120,120,120) 100%);
     transform: rotateY(180deg) translateZ(2px);
 }
 
@@ -165,11 +165,11 @@ button:hover {
 
 /* 历史记录入口按钮 */
 .history-entry-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    margin-top: 20px;
+    margin: 20px auto 0;
     padding: 12px 24px;
     background-color: transparent;
     border: 2px solid var(--border-color);
