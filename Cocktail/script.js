@@ -192,6 +192,7 @@ async function saveCardToSupabase(card, isUpdate = false) {
         saveCardsLocal();
       }
     }
+    console.log('数据已保存到本地存储');
     return card;
   }
   
@@ -224,10 +225,13 @@ async function saveCardToSupabase(card, isUpdate = false) {
     
     if (result.error) throw result.error;
     
+    console.log('数据已成功保存到 Supabase 数据库:', result.data[0]);
     return result.data[0];
     
   } catch (error) {
     console.error('保存卡片失败:', error);
+    console.error('错误详情:', JSON.stringify(error, null, 2));
+    alert('保存失败: ' + error.message);
     throw error;
   }
 }
@@ -394,6 +398,11 @@ function renderTags() {
 }
 
 async function submitForm() {
+  if (!currentUser && supabase) {
+    showMessage('请先登录以保存到云端');
+    return;
+  }
+  
   const barName = document.getElementById('barInput').value.trim();
   const drinkName = document.getElementById('drinkNameInput').value.trim();
   const baseSpirit = document.getElementById('baseSpiritSelect').value;
