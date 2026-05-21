@@ -569,7 +569,7 @@ function drawPieChart(canvas, data) {
     const total = data.reduce((sum, item) => sum + item.value, 0);
     let startAngle = -Math.PI / 2;
     
-    const colors = ['#ff8c42', '#ffa726', '#ffb74d', '#ffcc80', '#ff9800', '#f57c00', '#ff6f00', '#e65100'];
+    const colors = ['#FFD700', '#FFA500', '#FF6347', '#87CEEB', '#98FB98', '#DDA0DD', '#F0E68C', '#E6E6FA'];
     
     data.forEach((item, index) => {
         const sliceAngle = (item.value / total) * 2 * Math.PI;
