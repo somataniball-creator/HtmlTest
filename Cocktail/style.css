@@ -1030,6 +1030,43 @@ header h1 {
     }
 }
 
+.auth-btn {
+    background: var(--accent-color);
+    color: var(--bg-color);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.auth-btn:hover {
+    background: var(--accent-hover);
+}
+
+.auth-modal {
+    background: var(--card-bg);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 400px;
+    max-height: 90vh;
+    overflow: hidden;
+}
+
+.auth-switch {
+    text-align: center;
+    margin-top: 16px;
+    cursor: pointer;
+    color: var(--accent-color);
+    font-size: 14px;
+}
+
+.auth-switch:hover {
+    text-decoration: underline;
+}
+
 @media (min-width: 480px) {
     .container {
         max-width: 480px;

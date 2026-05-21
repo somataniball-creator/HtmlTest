@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>小酌记录</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Supabase JavaScript Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div class="container">
@@ -13,6 +15,7 @@
             <div class="header-actions">
                 <button class="back-btn" onclick="goBack()">返回</button>
                 <button class="stats-btn" onclick="openStats()">数据一览</button>
+                <button class="auth-btn" id="authBtn" onclick="handleAuth()">登录</button>
             </div>
         </header>
         
@@ -249,6 +252,33 @@
         </div>
     </div>
     
+    <!-- 登录弹窗 -->
+    <div class="modal-overlay" id="authOverlay" onclick="handleAuthOverlayClick(event)">
+        <div class="auth-modal">
+            <div class="modal-header">
+                <h2 id="authTitle">登录</h2>
+                <button class="close-btn" onclick="event.stopPropagation(); closeAuthModal();">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="authEmail">邮箱</label>
+                    <input type="email" id="authEmail" placeholder="请输入邮箱地址">
+                </div>
+                <div class="form-group">
+                    <label for="authPassword">密码</label>
+                    <input type="password" id="authPassword" placeholder="请输入密码">
+                </div>
+                <div id="authMessage" class="form-message"></div>
+                <button class="submit-btn" style="width: 100%;" onclick="handleAuthSubmit()">登录/注册</button>
+                <div class="auth-switch" onclick="toggleAuthMode()">
+                    <span id="authSwitchText">没有账号？点击注册</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Supabase 配置 -->
+    <script src="supabase/config.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
