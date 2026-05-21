@@ -171,6 +171,8 @@ async function signOut() {
 async function loadCards() {
   if (!supabaseClient || !currentUser) {
     loadLocalCards();
+    renderCards();
+    updateYearFilter();
     return;
   }
   
@@ -194,8 +196,10 @@ async function loadCards() {
       rating: item.rating || 0
     }));
     
+    console.log('成功从云端加载', cards.length, '条记录');
+    
   } catch (error) {
-    console.error('加载卡片失败:', error);
+    console.error('加载云端卡片失败，尝试本地数据:', error);
     loadLocalCards();
   }
   
@@ -466,29 +470,37 @@ async function submitForm() {
   
   try {
     const savedCard = await saveCardToSupabase(card);
-    if (savedCard) {
-      if (savedCard.id !== card.id) {
-        card.id = savedCard.id;
-      }
+    if (savedCard && savedCard.id !== card.id) {
+      card.id = savedCard.id;
     }
     
+    // 立即更新本地数据
     cards.unshift(card);
-    if (currentUser) {
-      await loadCards();
-    } else {
+    if (!currentUser) {
       saveCardsLocal();
     }
     
+    // 更新界面
     updateYearFilter();
     renderCards();
     updateStats();
     showMessage('保存成功！', true);
+    
+    // 尝试从云端重新加载（失败也不影响）
+    if (currentUser) {
+      try {
+        await loadCards();
+      } catch (e) {
+        console.log('重新加载数据失败，但保存已成功');
+      }
+    }
     
     setTimeout(() => {
       closeModal();
     }, 800);
     
   } catch (error) {
+    console.error('保存失败:', error);
     showMessage('保存失败，请重试');
   }
 }
