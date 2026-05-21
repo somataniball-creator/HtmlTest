@@ -18,25 +18,47 @@ function initSupabase() {
     return false;
   }
   
-  if (typeof window.supabase !== 'undefined') {
-    supabaseClient = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key);
-    return true;
+  try {
+    if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+      supabaseClient = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key);
+      console.log('Supabase 初始化成功');
+      return true;
+    } else {
+      console.warn('Supabase SDK 未正确加载');
+      return false;
+    }
+  } catch (error) {
+    console.error('Supabase 初始化失败:', error);
+    return false;
   }
-  
-  console.warn('Supabase SDK 未加载');
-  return false;
 }
 
 // 检查用户状态
 async function checkAuth() {
-  if (!supabaseClient) return;
+  if (!supabaseClient) {
+    console.log('Supabase 未初始化，使用本地存储模式');
+    loadLocalCards();
+    return;
+  }
   
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  currentUser = session?.user || null;
-  updateAuthButton();
-  
-  if (currentUser) {
-    await loadCards();
+  try {
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
+    if (error) {
+      console.error('获取会话失败:', error);
+      loadLocalCards();
+      return;
+    }
+    currentUser = session?.user || null;
+    updateAuthButton();
+    
+    if (currentUser) {
+      await loadCards();
+    } else {
+      loadLocalCards();
+    }
+  } catch (error) {
+    console.error('检查认证状态失败:', error);
+    loadLocalCards();
   }
 }
 
@@ -92,6 +114,11 @@ async function handleAuthSubmit() {
     return;
   }
   
+  if (!supabaseClient) {
+    showAuthMessage('Supabase 配置错误，请检查 config.js 文件');
+    return;
+  }
+  
   try {
     let result;
     
@@ -113,7 +140,8 @@ async function handleAuthSubmit() {
     }, 1000);
     
   } catch (error) {
-    showAuthMessage(error.message);
+    console.error('认证失败:', error);
+    showAuthMessage(error.message || '操作失败，请重试');
   }
 }
 
