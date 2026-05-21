@@ -38,6 +38,8 @@ async function checkAuth() {
   if (!supabaseClient) {
     console.log('Supabase 未初始化，使用本地存储模式');
     loadLocalCards();
+    renderCards();
+    updateYearFilter();
     return;
   }
   
@@ -45,7 +47,11 @@ async function checkAuth() {
     const { data: { session }, error } = await supabaseClient.auth.getSession();
     if (error) {
       console.error('获取会话失败:', error);
-      loadLocalCards();
+      // 未登录时不加载数据
+      cards = [];
+      renderCards();
+      updateYearFilter();
+      updateStats();
       return;
     }
     currentUser = session?.user || null;
@@ -54,20 +60,39 @@ async function checkAuth() {
     if (currentUser) {
       await loadCards();
     } else {
-      loadLocalCards();
+      // 未登录时不加载本地数据
+      cards = [];
+      renderCards();
+      updateYearFilter();
+      updateStats();
     }
   } catch (error) {
     console.error('检查认证状态失败:', error);
-    loadLocalCards();
+    // 出错时也不加载数据
+    cards = [];
+    renderCards();
+    updateYearFilter();
+    updateStats();
   }
 }
 
 // 更新登录按钮
 function updateAuthButton() {
   const btn = document.getElementById('authBtn');
-  if (!btn) return;
+  const addSection = document.getElementById('addSection');
   
-  btn.textContent = currentUser ? '退出' : '登录';
+  if (btn) {
+    btn.textContent = currentUser ? '退出' : '登录';
+  }
+  
+  if (addSection) {
+    // 如果没有配置 Supabase，或者用户已登录，显示添加按钮
+    if (!supabaseClient || currentUser) {
+      addSection.style.display = 'block';
+    } else {
+      addSection.style.display = 'none';
+    }
+  }
 }
 
 // 处理认证弹窗
@@ -163,8 +188,12 @@ async function signOut() {
   }
   currentUser = null;
   cards = [];
+  // 清空本地存储
+  localStorage.removeItem('cocktailCards');
   updateAuthButton();
   renderCards();
+  updateYearFilter();
+  updateStats();
 }
 
 // 加载卡片数据
@@ -315,6 +344,10 @@ async function init() {
 
 // 其他原有功能...
 function openModal() {
+  if (!currentUser && supabaseClient) {
+    alert('请先登录');
+    return;
+  }
   document.getElementById('modalOverlay').classList.add('active');
 }
 
