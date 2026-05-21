@@ -9,7 +9,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>极简调酒卡牌记录</h1>
+            <h1>小酌记录</h1>
             <div class="header-actions">
                 <button class="back-btn" onclick="goBack()">返回</button>
                 <button class="stats-btn" onclick="openStats()">数据一览</button>
@@ -21,6 +21,26 @@
                 <span class="plus-icon">+</span>
                 添加调酒卡牌
             </button>
+        </div>
+        
+        <div class="filter-section">
+            <div class="filter-group">
+                <label>年度</label>
+                <select id="yearFilter" onchange="applyFilters()">
+                    <option value="">全部</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>星级</label>
+                <select id="ratingFilter" onchange="applyFilters()">
+                    <option value="">全部</option>
+                    <option value="5">★★★★★</option>
+                    <option value="4">★★★★☆</option>
+                    <option value="3">★★★☆☆</option>
+                    <option value="2">★★☆☆☆</option>
+                    <option value="1">★☆☆☆☆</option>
+                </select>
+            </div>
         </div>
         
         <div class="cards-grid" id="cardsGrid">
@@ -35,7 +55,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2>添加调酒卡牌</h2>
-                <button class="close-btn" onclick="closeModal()">×</button>
+                <button class="close-btn" onclick="event.stopPropagation(); closeModal();">×</button>
             </div>
             
             <div class="modal-body">
@@ -54,87 +74,177 @@
                     </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="barInput">酒吧名字</label>
-                    <input type="text" id="barInput" placeholder="请输入酒吧名字">
-                </div>
-                
-                <div class="form-group">
-                    <label for="drinkNameInput">酒名</label>
-                    <input type="text" id="drinkNameInput" placeholder="请输入酒名">
-                </div>
-                
-                <div class="form-group">
-                    <label for="baseSpiritSelect">基酒分类</label>
-                    <select id="baseSpiritSelect">
-                        <option value="龙舌兰">龙舌兰</option>
-                        <option value="伏特加">伏特加</option>
-                        <option value="金酒">金酒</option>
-                        <option value="朗姆酒">朗姆酒</option>
-                        <option value="威士忌">威士忌</option>
-                        <option value="白兰地">白兰地</option>
-                        <option value="清酒">清酒</option>
-                        <option value="其他">其他</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>风味关键词</label>
-                    <div class="tags-container">
-                        <div class="tags-list" id="tagsList"></div>
-                        <div class="tag-input-wrapper">
-                            <input type="text" id="tagInput" placeholder="输入关键词，点击添加" onkeypress="handleTagKeypress(event)">
-                            <button class="add-tag-btn" onclick="addTag()">添加</button>
+                <div class="scrollable-content">
+                    <div class="form-group">
+                        <label for="barInput">酒吧名字</label>
+                        <input type="text" id="barInput" placeholder="请输入酒吧名字">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="drinkNameInput">酒名</label>
+                        <input type="text" id="drinkNameInput" placeholder="请输入酒名">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="baseSpiritSelect">基酒分类</label>
+                        <select id="baseSpiritSelect">
+                            <option value="龙舌兰">龙舌兰</option>
+                            <option value="伏特加">伏特加</option>
+                            <option value="金酒">金酒</option>
+                            <option value="朗姆酒">朗姆酒</option>
+                            <option value="威士忌">威士忌</option>
+                            <option value="白兰地">白兰地</option>
+                            <option value="清酒">清酒</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="star-rating" id="starRating">
+                            <span class="star" data-value="1">☆</span>
+                            <span class="star" data-value="2">☆</span>
+                            <span class="star" data-value="3">☆</span>
+                            <span class="star" data-value="4">☆</span>
+                            <span class="star" data-value="5">☆</span>
                         </div>
                     </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="reviewInput">个人饮用评价</label>
-                    <textarea id="reviewInput" rows="4" placeholder="写下你的饮用感受..."></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="dateInput">记录日期</label>
-                    <input type="date" id="dateInput">
-                    <span class="date-hint">不填则自动使用今日日期</span>
+                    
+                    <div class="form-group">
+                        <label>风味关键词</label>
+                        <div class="tags-container">
+                            <div class="tags-list" id="tagsList"></div>
+                            <div class="tag-input-wrapper">
+                                <input type="text" id="tagInput" placeholder="输入关键词，点击添加" onkeypress="handleTagKeypress(event)">
+                                <button class="add-tag-btn" onclick="addTag()">添加</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reviewInput">个人饮用评价</label>
+                        <textarea id="reviewInput" rows="4" placeholder="写下你的饮用感受..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="dateInput">记录日期</label>
+                        <input type="date" id="dateInput">
+                        <span class="date-hint">不填则自动使用今日日期</span>
+                    </div>
                 </div>
             </div>
             
             <div class="modal-footer">
                 <span class="form-message" id="formMessage"></span>
                 <div class="modal-buttons">
-                    <button class="cancel-btn" onclick="closeModal()">关闭</button>
-                    <button class="submit-btn" onclick="submitForm()">提交保存</button>
+                    <button class="cancel-btn" onclick="event.stopPropagation(); closeModal();">关闭</button>
+                    <button class="submit-btn" onclick="event.stopPropagation(); submitForm();">提交保存</button>
                 </div>
             </div>
         </div>
     </div>
     
-    <div class="modal-overlay" id="detailOverlay" onclick="closeDetail()">
+    <div class="modal-overlay" id="detailOverlay" onclick="handleDetailOverlayClick(event)">
         <div class="detail-modal">
             <div class="detail-header">
                 <h2>卡片详情</h2>
-                <button class="close-btn" onclick="closeDetail()">×</button>
+                <button class="close-btn" onclick="event.stopPropagation(); closeDetail();">×</button>
             </div>
             <div class="detail-body" id="detailBody">
             </div>
+            <div class="detail-body-edit" id="detailBodyEdit" style="display: none;">
+                <div class="form-group">
+                    <label>上传图片</label>
+                    <div class="image-upload" id="editImageUpload">
+                        <div class="upload-placeholder" id="editUploadPlaceholder" style="display: none;">
+                            <div class="upload-icon">📷</div>
+                            <span>点击上传图片（将自动裁剪为正方形）</span>
+                        </div>
+                        <div class="image-preview" id="editImagePreview">
+                            <img id="editPreviewImg" alt="预览">
+                            <button class="remove-img-btn" onclick="removeEditImage(event)">×</button>
+                        </div>
+                        <input type="file" id="editFileInput" accept="image/*" style="display: none;">
+                    </div>
+                </div>
+                
+                <div class="scrollable-content">
+                    <div class="form-group">
+                        <label for="editBarInput">酒吧名字</label>
+                        <input type="text" id="editBarInput" placeholder="请输入酒吧名字">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editDrinkInput">酒名</label>
+                        <input type="text" id="editDrinkInput" placeholder="请输入酒名">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editBaseSpiritSelect">基酒分类</label>
+                        <select id="editBaseSpiritSelect">
+                            <option value="龙舌兰">龙舌兰</option>
+                            <option value="伏特加">伏特加</option>
+                            <option value="金酒">金酒</option>
+                            <option value="朗姆酒">朗姆酒</option>
+                            <option value="威士忌">威士忌</option>
+                            <option value="白兰地">白兰地</option>
+                            <option value="清酒">清酒</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="star-rating" id="editStarRating">
+                            <span class="star" data-value="1">☆</span>
+                            <span class="star" data-value="2">☆</span>
+                            <span class="star" data-value="3">☆</span>
+                            <span class="star" data-value="4">☆</span>
+                            <span class="star" data-value="5">☆</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>风味关键词</label>
+                        <div class="tags-container">
+                            <div class="tags-list" id="editTagsList"></div>
+                            <div class="tag-input-wrapper">
+                                <input type="text" id="editTagInput" placeholder="输入关键词，点击添加" onkeypress="handleEditTagKeypress(event)">
+                                <button class="add-tag-btn" onclick="addEditTag()">添加</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editReviewInput">个人饮用评价</label>
+                        <textarea id="editReviewInput" rows="4" placeholder="写下你的饮用感受..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editDateInput">记录日期</label>
+                        <input type="date" id="editDateInput">
+                        <span class="date-hint">不填则自动使用今日日期</span>
+                    </div>
+                </div>
+            </div>
             <div class="detail-footer">
-                <button class="delete-btn" onclick="deleteCurrentCard()">删除卡片</button>
+                <div class="detail-footer-edit" style="display: none;">
+                    <button class="cancel-btn" onclick="event.stopPropagation(); toggleEditMode();">取消</button>
+                    <button class="submit-btn" onclick="event.stopPropagation(); saveEdit();">保存修改</button>
+                </div>
+                <div class="detail-footer-view">
+                    <button class="cancel-btn" onclick="event.stopPropagation(); toggleEditMode();">编辑</button>
+                    <button class="delete-btn" onclick="event.stopPropagation(); deleteCurrentCard();">删除卡片</button>
+                </div>
             </div>
         </div>
     </div>
     
-    <div class="modal-overlay" id="statsOverlay" onclick="closeStats()">
+    <div class="modal-overlay" id="statsOverlay" onclick="handleStatsOverlayClick(event)">
         <div class="stats-modal">
             <div class="stats-header">
                 <h2>数据一览</h2>
-                <button class="close-btn" onclick="closeStats()">×</button>
+                <button class="close-btn" onclick="event.stopPropagation(); closeStats();">×</button>
             </div>
             <div class="stats-body" id="statsBody">
-            </div>
-            <div class="stats-footer">
-                <button class="cancel-btn" onclick="closeStats()">关闭</button>
             </div>
         </div>
     </div>
