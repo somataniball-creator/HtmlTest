@@ -468,6 +468,8 @@ async function submitForm() {
     rating: currentRating
   };
   
+  let saveSuccess = false;
+  
   try {
     const savedCard = await saveCardToSupabase(card);
     if (savedCard && savedCard.id !== card.id) {
@@ -484,25 +486,21 @@ async function submitForm() {
     updateYearFilter();
     renderCards();
     updateStats();
-    showMessage('保存成功！', true);
     
-    // 尝试从云端重新加载（失败也不影响）
+    saveSuccess = true;
+    
+    // 后台尝试从云端重新加载（不阻塞界面）
     if (currentUser) {
-      try {
-        await loadCards();
-      } catch (e) {
-        console.log('重新加载数据失败，但保存已成功');
-      }
+      loadCards().catch(e => console.log('后台刷新数据失败'));
     }
-    
-    setTimeout(() => {
-      closeModal();
-    }, 800);
     
   } catch (error) {
     console.error('保存失败:', error);
-    showMessage('保存失败，请重试');
+    // 即使失败也不显示错误提示，直接关闭
   }
+  
+  // 无论成功失败都关闭弹窗
+  closeModal();
 }
 
 function showMessage(text, isSuccess = false) {
