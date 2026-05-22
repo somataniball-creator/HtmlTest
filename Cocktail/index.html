@@ -26,7 +26,7 @@
             </button>
         </div>
         
-        <div class="filter-section">
+        <div class="filter-section" id="filterSection">
             <div class="filter-group">
                 <label>年度</label>
                 <select id="yearFilter" onchange="applyFilters()">
@@ -44,6 +44,12 @@
                     <option value="1">★☆☆☆☆</option>
                 </select>
             </div>
+        </div>
+        
+        <div class="login-prompt" id="loginPrompt" style="display: none;">
+            <div class="empty-icon">🔐</div>
+            <p>请先登录以使用调酒记录功能</p>
+            <button class="auth-btn" onclick="handleAuth()" style="margin-top: 16px; width: auto; padding: 12px 32px;">登录</button>
         </div>
         
         <div class="cards-grid" id="cardsGrid">
@@ -64,7 +70,7 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label>上传图片</label>
-                    <div class="image-upload" id="imageUpload">
+                    <div class="image-upload" id="imageUpload" onclick="document.getElementById('fileInput').click()">
                         <div class="upload-placeholder" id="uploadPlaceholder">
                             <div class="upload-icon">📷</div>
                             <span>点击上传图片（将自动裁剪为正方形）</span>
@@ -73,7 +79,7 @@
                             <img id="previewImg" alt="预览">
                             <button class="remove-img-btn" onclick="removeImage(event)">×</button>
                         </div>
-                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
                     </div>
                 </div>
                 
@@ -157,7 +163,7 @@
             <div class="detail-body-edit" id="detailBodyEdit" style="display: none;">
                 <div class="form-group">
                     <label>上传图片</label>
-                    <div class="image-upload" id="editImageUpload">
+                    <div class="image-upload" id="editImageUpload" onclick="document.getElementById('editFileInput').click()">
                         <div class="upload-placeholder" id="editUploadPlaceholder" style="display: none;">
                             <div class="upload-icon">📷</div>
                             <span>点击上传图片（将自动裁剪为正方形）</span>
@@ -166,7 +172,7 @@
                             <img id="editPreviewImg" alt="预览">
                             <button class="remove-img-btn" onclick="removeEditImage(event)">×</button>
                         </div>
-                        <input type="file" id="editFileInput" accept="image/*" style="display: none;">
+                        <input type="file" id="editFileInput" accept="image/*" style="display: none;" onchange="handleEditFileSelect(event)">
                     </div>
                 </div>
                 

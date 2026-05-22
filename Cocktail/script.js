@@ -80,18 +80,26 @@ async function checkAuth() {
 function updateAuthButton() {
   const btn = document.getElementById('authBtn');
   const addSection = document.getElementById('addSection');
+  const filterSection = document.getElementById('filterSection');
+  const cardsGrid = document.getElementById('cardsGrid');
+  const loginPrompt = document.getElementById('loginPrompt');
   
   if (btn) {
     btn.textContent = currentUser ? '退出' : '登录';
   }
   
-  if (addSection) {
-    // 如果没有配置 Supabase，或者用户已登录，显示添加按钮
-    if (!supabaseClient || currentUser) {
-      addSection.style.display = 'block';
-    } else {
-      addSection.style.display = 'none';
-    }
+  // 本地模式或已登录，显示正常界面
+  if (!supabaseClient || currentUser) {
+    if (addSection) addSection.style.display = 'block';
+    if (filterSection) filterSection.style.display = 'flex';
+    if (cardsGrid) cardsGrid.style.display = 'grid';
+    if (loginPrompt) loginPrompt.style.display = 'none';
+  } else {
+    // 未登录且有 Supabase 配置，只显示登录提示
+    if (addSection) addSection.style.display = 'none';
+    if (filterSection) filterSection.style.display = 'none';
+    if (cardsGrid) cardsGrid.style.display = 'none';
+    if (loginPrompt) loginPrompt.style.display = 'block';
   }
 }
 

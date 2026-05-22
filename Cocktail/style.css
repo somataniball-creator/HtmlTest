@@ -189,12 +189,18 @@ header h1 {
     padding: 60px 20px;
 }
 
+.login-prompt {
+    text-align: center;
+    padding: 80px 20px;
+}
+
 .empty-icon {
     font-size: 48px;
     margin-bottom: 12px;
 }
 
-.empty-state p {
+.empty-state p,
+.login-prompt p {
     color: var(--text-tertiary);
     font-size: 14px;
 }
