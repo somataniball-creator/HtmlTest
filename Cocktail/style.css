@@ -496,6 +496,15 @@ header h1 {
     color: var(--text-primary);
     background: var(--bg-color);
     transition: border-color 0.2s;
+    box-sizing: border-box;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* 确保日期输入框在移动端显示正常 */
+.form-group input[type="date"] {
+    min-height: 44px;
+    -webkit-appearance: none;
 }
 
 .form-group input:focus,
@@ -1061,6 +1070,25 @@ header h1 {
     max-width: 400px;
     max-height: 85vh;
     overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+/* 登录模式样式 */
+.auth-modal.login-mode {
+    border-top: 3px solid var(--accent-color);
+}
+
+/* 注册模式样式 - 可以用不同的颜色区分 */
+.auth-modal.register-mode {
+    border-top: 3px solid #6c5ce7;
+}
+
+.auth-modal.register-mode .submit-btn {
+    background: #6c5ce7;
+}
+
+.auth-modal.register-mode .submit-btn:hover {
+    background: #5f4dd7;
 }
 
 .auth-modal .modal-body {
@@ -1088,6 +1116,10 @@ header h1 {
     color: var(--text-primary);
     background: var(--bg-color);
     transition: border-color 0.2s;
+    box-sizing: border-box;
+    max-width: 100%;
+    overflow-x: hidden;
+    min-height: 44px;
 }
 
 .auth-modal .form-group input:focus {

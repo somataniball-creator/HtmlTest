@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>小酌记录</title>
+    <title>小酌Record</title>
     <link rel="stylesheet" href="style.css">
     <!-- Supabase JavaScript Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -11,10 +11,9 @@
 <body>
     <div class="container">
         <header>
-            <h1>小酌记录</h1>
+            <h1>小酌Record</h1>
             <div class="header-actions">
-                <button class="back-btn" onclick="goBack()">返回</button>
-                <button class="stats-btn" onclick="openStats()">数据一览</button>
+                <button class="stats-btn" id="statsBtn" onclick="openStats()">数据一览</button>
                 <button class="auth-btn" id="authBtn" onclick="handleAuth()">登录</button>
             </div>
         </header>
@@ -22,7 +21,7 @@
         <div class="add-section" id="addSection">
             <button class="add-btn" onclick="openModal()">
                 <span class="plus-icon">+</span>
-                添加调酒卡牌
+                添加调酒记录
             </button>
         </div>
         
@@ -104,17 +103,20 @@
                             <option value="威士忌">威士忌</option>
                             <option value="白兰地">白兰地</option>
                             <option value="清酒">清酒</option>
+                            <option value="白酒">白酒</option>
+                            <option value="黄酒">黄酒</option>
+                            <option value="米酒">米酒</option>
                             <option value="其他">其他</option>
                         </select>
                     </div>
                     
                     <div class="form-group">
                         <div class="star-rating" id="starRating">
-                            <span class="star" data-value="1">☆</span>
-                            <span class="star" data-value="2">☆</span>
-                            <span class="star" data-value="3">☆</span>
-                            <span class="star" data-value="4">☆</span>
-                            <span class="star" data-value="5">☆</span>
+                            <span class="star" data-value="1" onclick="handleStarClick(1)">☆</span>
+                            <span class="star" data-value="2" onclick="handleStarClick(2)">☆</span>
+                            <span class="star" data-value="3" onclick="handleStarClick(3)">☆</span>
+                            <span class="star" data-value="4" onclick="handleStarClick(4)">☆</span>
+                            <span class="star" data-value="5" onclick="handleStarClick(5)">☆</span>
                         </div>
                     </div>
                     
@@ -197,17 +199,20 @@
                             <option value="威士忌">威士忌</option>
                             <option value="白兰地">白兰地</option>
                             <option value="清酒">清酒</option>
+                            <option value="白酒">白酒</option>
+                            <option value="黄酒">黄酒</option>
+                            <option value="米酒">米酒</option>
                             <option value="其他">其他</option>
                         </select>
                     </div>
                     
                     <div class="form-group">
                         <div class="star-rating" id="editStarRating">
-                            <span class="star" data-value="1">☆</span>
-                            <span class="star" data-value="2">☆</span>
-                            <span class="star" data-value="3">☆</span>
-                            <span class="star" data-value="4">☆</span>
-                            <span class="star" data-value="5">☆</span>
+                            <span class="star" data-value="1" onclick="handleEditStarClick(1)">☆</span>
+                            <span class="star" data-value="2" onclick="handleEditStarClick(2)">☆</span>
+                            <span class="star" data-value="3" onclick="handleEditStarClick(3)">☆</span>
+                            <span class="star" data-value="4" onclick="handleEditStarClick(4)">☆</span>
+                            <span class="star" data-value="5" onclick="handleEditStarClick(5)">☆</span>
                         </div>
                     </div>
                     
@@ -260,7 +265,7 @@
     
     <!-- 登录弹窗 -->
     <div class="modal-overlay" id="authOverlay" onclick="handleAuthOverlayClick(event)">
-        <div class="auth-modal">
+        <div class="auth-modal" id="authModalContainer">
             <div class="modal-header">
                 <h2 id="authTitle">登录</h2>
                 <button class="close-btn" onclick="event.stopPropagation(); closeAuthModal();">×</button>
@@ -275,7 +280,7 @@
                     <input type="password" id="authPassword" placeholder="请输入密码">
                 </div>
                 <div id="authMessage" class="form-message"></div>
-                <button class="submit-btn" onclick="handleAuthSubmit()">登录/注册</button>
+                <button class="submit-btn" id="authSubmitBtn" onclick="handleAuthSubmit()">登录</button>
                 <div class="auth-switch" onclick="toggleAuthMode()">
                     <span id="authSwitchText">没有账号？点击注册</span>
                 </div>

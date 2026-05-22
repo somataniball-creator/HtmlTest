@@ -79,6 +79,7 @@ async function checkAuth() {
 // 更新登录按钮
 function updateAuthButton() {
   const btn = document.getElementById('authBtn');
+  const statsBtn = document.getElementById('statsBtn');
   const addSection = document.getElementById('addSection');
   const filterSection = document.getElementById('filterSection');
   const cardsGrid = document.getElementById('cardsGrid');
@@ -94,12 +95,14 @@ function updateAuthButton() {
     if (filterSection) filterSection.style.display = 'flex';
     if (cardsGrid) cardsGrid.style.display = 'grid';
     if (loginPrompt) loginPrompt.style.display = 'none';
+    if (statsBtn) statsBtn.style.display = 'block';
   } else {
     // 未登录且有 Supabase 配置，只显示登录提示
     if (addSection) addSection.style.display = 'none';
     if (filterSection) filterSection.style.display = 'none';
     if (cardsGrid) cardsGrid.style.display = 'none';
     if (loginPrompt) loginPrompt.style.display = 'block';
+    if (statsBtn) statsBtn.style.display = 'none';
   }
 }
 
@@ -115,6 +118,15 @@ function handleAuth() {
 function openAuthModal() {
   document.getElementById('authOverlay').classList.add('active');
   resetAuthForm();
+  // 初始化样式
+  const authModal = document.getElementById('authModalContainer');
+  if (isLoginMode) {
+    authModal.classList.remove('register-mode');
+    authModal.classList.add('login-mode');
+  } else {
+    authModal.classList.remove('login-mode');
+    authModal.classList.add('register-mode');
+  }
 }
 
 function closeAuthModal() {
@@ -125,9 +137,21 @@ function toggleAuthMode() {
   isLoginMode = !isLoginMode;
   const title = document.getElementById('authTitle');
   const switchText = document.getElementById('authSwitchText');
+  const submitBtn = document.getElementById('authSubmitBtn');
+  const authModal = document.getElementById('authModalContainer');
   
   title.textContent = isLoginMode ? '登录' : '注册';
   switchText.textContent = isLoginMode ? '没有账号？点击注册' : '已有账号？点击登录';
+  submitBtn.textContent = isLoginMode ? '登录' : '注册';
+  
+  // 添加样式区分
+  if (isLoginMode) {
+    authModal.classList.remove('register-mode');
+    authModal.classList.add('login-mode');
+  } else {
+    authModal.classList.remove('login-mode');
+    authModal.classList.add('register-mode');
+  }
 }
 
 function resetAuthForm() {
@@ -551,27 +575,23 @@ function showMessage(text, isSuccess = false) {
 }
 
 function setupStarRating() {
+  // 保留此函数以确保兼容性
+}
+
+// 新添加的星级点击处理函数
+function handleStarClick(value) {
+  currentRating = value;
   const starRating = document.getElementById('starRating');
-  const editStarRating = document.getElementById('editStarRating');
-  
   if (starRating) {
-    const stars = starRating.querySelectorAll('.star');
-    stars.forEach(star => {
-      star.addEventListener('click', function () {
-        currentRating = parseInt(this.dataset.value);
-        updateStarDisplay(starRating, currentRating);
-      });
-    });
+    updateStarDisplay(starRating, currentRating);
   }
-  
+}
+
+function handleEditStarClick(value) {
+  editRating = value;
+  const editStarRating = document.getElementById('editStarRating');
   if (editStarRating) {
-    const stars = editStarRating.querySelectorAll('.star');
-    stars.forEach(star => {
-      star.addEventListener('click', function () {
-        editRating = parseInt(this.dataset.value);
-        updateStarDisplay(editStarRating, editRating);
-      });
-    });
+    updateStarDisplay(editStarRating, editRating);
   }
 }
 
@@ -1147,10 +1167,6 @@ function handleStatsOverlayClick(event) {
   if (event.target === document.getElementById('statsOverlay')) {
     closeStats();
   }
-}
-
-function goBack() {
-  window.location.href = '../index.html';
 }
 
 window.addEventListener('DOMContentLoaded', init);
