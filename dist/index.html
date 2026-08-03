@@ -16,5 +16,63 @@
   </head>
   <body>
     <div id="root"></div>
+    <style>
+      .preview-fit { overflow: hidden !important; max-height: none !important; min-height: 0 !important; }
+      .preview-fit > .p-3 { display: block !important; position: relative; padding: 12px !important; }
+      .preview-fit .preview-scaler { --fit-scale: 1; --zoom-scale: 1; transform: scale(calc(var(--fit-scale) * var(--zoom-scale))); transform-origin: top left; display: block; }
+    </style>
+    <script>
+    (function(){
+      function applyFit(){
+        var list = document.querySelectorAll('[class*="overflow-auto"][class*="scroll-thin"][class*="bg-ocean"]');
+        for (var i=0;i<list.length;i++){
+          var box = list[i];
+          var pad = box.querySelector('.p-3');
+          if (!pad) continue;
+          var kids = pad.children;
+          var grid = null;
+          for (var k=0;k<kids.length;k++){
+            if (kids[k].style && kids[k].style.width && kids[k].style.height) {
+              grid = kids[k]; break;
+            }
+          }
+          if (!grid) continue;
+          var w = parseFloat(grid.style.width);
+          var h = parseFloat(grid.style.height);
+          if (!w || !h || isNaN(w) || isNaN(h)) continue;
+          box.classList.add('preview-fit');
+          grid.classList.add('preview-scaler');
+          var availW = Math.max(box.clientWidth - 24, 100);
+          var availH = Math.max(box.clientHeight - 24, 150);
+          var s = Math.min(1, availW / w, availH / h);
+          var z = window.__canvasZoom || 1;
+          grid.style.setProperty('--fit-scale', s);
+          grid.style.setProperty('--zoom-scale', z);
+          window.__fitScale = s;
+          pad.style.display = 'block';
+          pad.style.position = 'relative';
+          pad.style.height = (h * s * z + 24) + 'px';
+        }
+      }
+      var t1=null,t2=null,t3=null;
+      function schedule(){ clearTimeout(t1); t1 = setTimeout(applyFit, 60); }
+      var mo = new MutationObserver(schedule);
+      try {
+        mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['style','class'] });
+      } catch(e) {}
+      if (typeof ResizeObserver !== 'undefined') {
+        var ro = new ResizeObserver(function(){ clearTimeout(t2); t2 = setTimeout(applyFit, 80); });
+        ro.observe(document.documentElement);
+      }
+      window.addEventListener('resize', function(){ clearTimeout(t3); t3 = setTimeout(applyFit, 100); });
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', applyFit);
+      } else {
+        applyFit();
+      }
+      window.addEventListener('load', function(){ setTimeout(applyFit, 200); });
+      setTimeout(applyFit, 500);
+    })();
+    </script>
   </body>
 </html>
