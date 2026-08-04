@@ -133,13 +133,13 @@ body{
 }
 .cell .cell-img{
   position:absolute;
-  left:-0.5px; top:-0.5px;
-  width:calc(100% + 1px);
-  height:calc(100% + 1px);
+  left:0; top:0;
+  width:100%;
+  height:100%;
   background-color:transparent;
   background-repeat:no-repeat;
-  background-position:center center;
-  background-size:cover;
+  background-position:0 0;
+  background-size:0 0;
 }
 .cell.filled .placeholder{display:none}
 .cell .placeholder{
@@ -916,33 +916,30 @@ body{
       tmpImg.src = cells[idx];
       return;
     }
-    // 用 getBoundingClientRect 取亚像素精确值，避免 clientWidth 的整数截断
     var rect = cellEl.getBoundingClientRect();
     var cellW = rect.width || cellEl.clientWidth || 0;
     var cellH = rect.height || cellEl.clientHeight || 0;
     var scale = Math.max(0.1, Math.min(5, t.scale));
     var baseScale = (cellW>0 && cellH>0) ? Math.max(cellW / m.iw, cellH / m.ih) : 1;
     var totalScale = baseScale * scale;
-    // 用 Math.ceil 向上取整，避免亚像素偏差导致背景图比容器小 1px 出现裁切
-    var bgW = Math.max(1, Math.ceil(m.iw * totalScale));
-    var bgH = Math.max(1, Math.ceil(m.ih * totalScale));
-    // 计算允许的最大像素偏移：保证图片始终覆盖 cell（放大后）或留在 cell 内（缩小时）
+    // 图片尺寸：保持宽高比，允许小于或大于 cell
+    var bgW = Math.max(1, Math.round(m.iw * totalScale));
+    var bgH = Math.max(1, Math.round(m.ih * totalScale));
+    // 最大允许偏移
     var maxOffX = Math.max(0, (bgW - cellW) / 2);
     var maxOffY = Math.max(0, (bgH - cellH) / 2);
     var offX = t.ox * cellW;
     var offY = t.oy * cellH;
     offX = Math.max(-maxOffX, Math.min(maxOffX, offX));
     offY = Math.max(-maxOffY, Math.min(maxOffY, offY));
-    // 同步回写夹取后的 ox/oy（比例值）
     t.ox = cellW > 0 ? offX / cellW : 0;
     t.oy = cellH > 0 ? offY / cellH : 0;
     cellTransforms[idx] = t;
-    // 用 floor+ceil 代替 Math.round，确保居中时不会因为 0.5px 向下取整导致另一边少 1px
-    var baseX = Math.floor((cellW - bgW) / 2);
-    var baseY = Math.floor((cellH - bgH) / 2);
+    // 居中位置 + 用户偏移 → 合并为单一 background-position
+    var posX = Math.round((cellW - bgW) / 2 + offX);
+    var posY = Math.round((cellH - bgH) / 2 + offY);
     imgEl.style.backgroundSize = bgW + 'px ' + bgH + 'px';
-    imgEl.style.backgroundPosition = baseX + 'px ' + baseY + 'px';
-    imgEl.style.transform = 'translate(' + offX + 'px,' + offY + 'px)';
+    imgEl.style.backgroundPosition = posX + 'px ' + posY + 'px';
   }
 
   function updateCellTransform(idx, scale, ox, oy){
@@ -1002,21 +999,20 @@ body{
     }
     gw = Math.max(1, Math.round(gw));
     gh = Math.max(1, Math.round(gh));
-    var sizeChanged = !gridEl.style.width || (+gridEl.style.width.replace('px','') !== gw) || (+(gridEl.style.height||'').replace('px','') !== gh);
     gridEl.style.width = gw + 'px';
     gridEl.style.height = gh + 'px';
     gridScale = 1;
     panX = 0;
     panY = 0;
     try { applyTransform(); } catch(_) {}
-    // cell 尺寸变了，重新计算每张图的背景尺寸/位置
-    if (sizeChanged) {
+    // 延迟到下一帧再应用 cell transform，确保 layout 完成，cell 有正确的 clientWidth
+    requestAnimationFrame(function(){
       for (var i=0;i<cells.length;i++){
         if (!cells[i]) continue;
         var ce = gridEl.querySelector('.cell[data-idx="'+i+'"]');
         if (ce) applyCellTransform(i, ce);
       }
-    }
+    });
   }
 
   function bindCellLongPress(cell, idx, isFilled){
@@ -1239,36 +1235,27 @@ body{
         outH = Math.max(1, Math.round(shortSide / ratio));
       }
 
-      // 3. 预览端 → 画布端 比例换算：沿用 v2.1.0 稳定版的 kAvg 几何平均，保证整体视觉一致
+      // 3. 直接读取预览端 grid 的真实渲染尺寸，完全避免独立计算的累积误差
       var gridRect = null;
       try { gridRect = gridEl.getBoundingClientRect ? gridEl.getBoundingClientRect() : null; } catch(_) {}
-      var previewW = Math.max(1, Math.round(gridRect ? (gridRect.width || 0) : 0));
-      var previewH = Math.max(1, Math.round(gridRect ? (gridRect.height || 0) : 0));
-      var scaleX = outW / previewW;
-      var scaleY = outH / previewH;
-      var kAvg = Math.sqrt(scaleX * scaleY);
-      var cellGap = Math.max(0, Math.round(cellGapCss * kAvg));
-      var outerGap = Math.max(0, Math.round(outerGapCss * kAvg));
+      var previewW = Math.max(1, gridRect ? gridRect.width : 1);
+      var previewH = Math.max(1, gridRect ? gridRect.height : 1);
 
-      // 4. canvas cellW/cellH：把画布扣除 gap/outer 剩余的空间 n 等分（v2.1.0 稳定算法），保证整张图无缝贴合
-      var cellW = Math.max(1, Math.floor((outW - 2*outerGap - (n-1)*cellGap) / n));
-      var cellH = Math.max(1, Math.floor((outH - 2*outerGap - (n-1)*cellGap) / n));
-      outW = 2*outerGap + n*cellW + (n-1)*cellGap;
-      outH = 2*outerGap + n*cellH + (n-1)*cellGap;
-
-      // 为单图变换准备的"真实预览 cell 尺寸"（用于与 canvas cell 实际缩放比 kx/ky 对齐）
-      var gridBorderPx = 1;
-      var pxContW = Math.max(1, previewW - 2*gridBorderPx - 2*outerGapCss);
-      var pxContH = Math.max(1, previewH - 2*gridBorderPx - 2*outerGapCss);
-      var previewCellW = Math.max(1, (pxContW - (n-1)*cellGapCss) / n);
-      var previewCellH = Math.max(1, (pxContH - (n-1)*cellGapCss) / n);
-
-      // 圆角半径：按预览 cell 的宽/高比（哪个短）换算，保证圆角视觉一致
-      var kx = cellW / Math.max(1, previewCellW);
-      var ky = cellH / Math.max(1, previewCellH);
-      var kMin = Math.min(kx, ky);
-      var radiusPx = Math.max(0, Math.round(radiusCss * kMin));
-      var r = Math.min(radiusPx, Math.floor(cellW/2), Math.floor(cellH/2));
+      // 读取每个 cell 的真实渲染位置（相对 grid 内部的百分比）
+      var cellRects = [];
+      for (var ci = 0; ci < n*n; ci++) {
+        var ce = gridEl.querySelector('.cell[data-idx="' + ci + '"]');
+        if (ce) {
+          var cr = ce.getBoundingClientRect();
+          var pL = gridRect ? (cr.left - gridRect.left) / gridRect.width : 0;
+          var pT = gridRect ? (cr.top - gridRect.top) / gridRect.height : 0;
+          var pW = gridRect ? cr.width / gridRect.width : 1/n;
+          var pH = gridRect ? cr.height / gridRect.height : 1/n;
+          cellRects.push({pL:pL, pT:pT, pW:pW, pH:pH, cssL:cr.left-(gridRect?gridRect.left:0), cssT:cr.top-(gridRect?gridRect.top:0), cssW:cr.width, cssH:cr.height});
+        } else {
+          cellRects.push({pL:ci%n/n, pT:Math.floor(ci/n)/n, pW:1/n, pH:1/n});
+        }
+      }
 
       var canvas = document.createElement('canvas');
       canvas.width = outW; canvas.height = outH;
@@ -1295,25 +1282,44 @@ body{
         ctx.closePath();
       }
 
-      // 第 1 层：整个画布填间隙背景色（用户选的黑/白/自定义）
+      // 圆角半径：按预览端 cell 的实际尺寸换算（短边缩比）
+      var s0 = cellRects[0];
+      var prev0w = Math.max(1, s0.cssW || 1);
+      var prev0h = Math.max(1, s0.cssH || 1);
+      var cell0w = Math.round(s0.pW * outW);
+      var cell0h = Math.round(s0.pH * outH);
+      var kxR = cell0w / prev0w;
+      var kyR = cell0h / prev0h;
+      var rPreview = Math.max(0, Math.round(radiusCss));
+      var r = Math.max(0, Math.round(rPreview * Math.min(kxR, kyR)));
+
+      // 第 1 层：整个画布填间隙背景色
       ctx.fillStyle = gapColorCss;
       ctx.fillRect(0, 0, outW, outH);
 
       for (var i = 0; i < n * n; i++){
-        var col = i % n, row = Math.floor(i / n);
-        var x = outerGap + col * (cellW + cellGap);
-        var y = outerGap + row * (cellH + cellGap);
         var found = results.find(function(rr){ return rr.idx === i; });
         var hasImg = !!(cells[i] && found && found.img && found.img.complete && found.img.naturalWidth>0);
 
-        // 第 2 层：cell 底色圆角填充（--surface2）
+        // 用百分比推导 canvas 端 cell 的真实位置和尺寸（位置比例 = 预览端的位置占比 × 画布总尺寸）
+        var cr = cellRects[i];
+        var x = Math.round(cr.pL * outW);
+        var y = Math.round(cr.pT * outH);
+        var cellW = Math.round(cr.pW * outW);
+        var cellH = Math.round(cr.pH * outH);
+        // 修正：最后一列/最后一行的 cell 占满剩余空间
+        var col = i % n, row = Math.floor(i / n);
+        if (col === n - 1) cellW = outW - x;
+        if (row === n - 1) cellH = outH - y;
+
+        // 第 2 层：cell 底色
         ctx.save();
         roundRectPath(x, y, cellW, cellH, r);
         ctx.fillStyle = '#252532';
         ctx.fill();
         ctx.restore();
 
-        // 第 3 层：图片 cover 绘制 + 单图变换（边界夹取，保证与预览端完全一致）
+        // 第 3 层：图片绘制（与预览端 applyCellTransform 公式完全一致）
         if (hasImg){
           ctx.save();
           roundRectPath(x, y, cellW, cellH, r);
@@ -1321,21 +1327,34 @@ body{
           var img = found.img;
           var iw = img.naturalWidth, ih = img.naturalHeight;
           var ct = cellTransforms[i] || {scale:1, ox:0, oy:0};
-          var pW = Math.max(1, previewCellW);
-          var pH = Math.max(1, previewCellH);
-          var kx = cellW / pW;
-          var ky = cellH / pH;
-          var baseScalePrev = Math.max(pW / iw, pH / ih);
-          var total = baseScalePrev * Math.max(0.1, Math.min(5, ct.scale));
-          var dw = Math.max(1, Math.round(iw * total * kx));
-          var dh = Math.max(1, Math.round(ih * total * ky));
-          // 夹取偏移，保证图片始终覆盖 cell 或留在 cell 内
-          var maxOffX = Math.max(0, Math.abs(dw - cellW) / 2);
-          var maxOffY = Math.max(0, Math.abs(dh - cellH) / 2);
-          var offX = Math.round(ct.ox * cellW);
-          var offY = Math.round(ct.oy * cellH);
-          offX = Math.max(-maxOffX, Math.min(maxOffX, offX));
-          offY = Math.max(-maxOffY, Math.min(maxOffY, offY));
+
+          // 预览端的 cover 基准（用预览端 cell 真实尺寸 cr.cssW / cr.cssH）
+          var cwPrev = Math.max(1, cr.cssW || 1);
+          var chPrev = Math.max(1, cr.cssH || 1);
+          var baseScalePrev = Math.max(cwPrev / iw, chPrev / ih);
+          var userScale = Math.max(0.1, Math.min(5, ct.scale));
+          var total = baseScalePrev * userScale;
+
+          // 预览端 bgW/bgH：Math.round(iw/ih * total)，与 applyCellTransform 完全一致
+          var bgW_prev = Math.max(1, Math.round(iw * total));
+          var bgH_prev = Math.max(1, Math.round(ih * total));
+          // canvas 端 = 预览端 × (canvasCell / previewCell) 按比例缩放
+          var dw = Math.max(1, Math.round(bgW_prev * (cellW / cwPrev)));
+          var dh = Math.max(1, Math.round(bgH_prev * (cellH / chPrev)));
+
+          // 预览端 maxOff 计算完全一致：max(0, (bg - cell)/2)
+          var maxOffX_prev = Math.max(0, (bgW_prev - cwPrev) / 2);
+          var maxOffY_prev = Math.max(0, (bgH_prev - chPrev) / 2);
+          // 预览端 clamp 后的 ox/oy 像素值，再按比例映射到 canvas
+          var offX_prev = ct.ox * cwPrev;
+          var offY_prev = ct.oy * chPrev;
+          offX_prev = Math.max(-maxOffX_prev, Math.min(maxOffX_prev, offX_prev));
+          offY_prev = Math.max(-maxOffY_prev, Math.min(maxOffY_prev, offY_prev));
+          // canvas 端偏移 = 预览端偏移 × (canvasCell / previewCell)
+          var offX = offX_prev * (cellW / cwPrev);
+          var offY = offY_prev * (cellH / chPrev);
+
+          // 居中位置 + 用户偏移（和 applyCellTransform 中的 posX/posY 完全等价）
           var baseX = Math.round(x + (cellW - dw) / 2);
           var baseY = Math.round(y + (cellH - dh) / 2);
           var dx = Math.round(baseX + offX);
@@ -1702,6 +1721,7 @@ body{
   var cellEditDragging = false;
   var cellEditStartX = 0, cellEditStartY = 0;
   var cellEditStartOx = 0, cellEditStartOy = 0;
+  var cellEditPrevX = 0, cellEditPrevY = 0;
 
   function getEditingCellEl(){
     if (editingCell < 0) return null;
@@ -1731,14 +1751,16 @@ body{
     if (editingCell < 0) return;
     var cellEl = getEditingCellEl();
     if (!cellEl || !cellEl.classList.contains('filled')) return;
-    // 只有点击在 cell 内部才开始拖拽
     if (!cellEl.contains(e.target)) return;
     cellEditDragging = true;
     cellEditStartX = e.clientX;
     cellEditStartY = e.clientY;
+    // 用增量累加：保存起始偏移供增量计算，并且不再用 cellTransforms 里的原始值
     var t = cellTransforms[editingCell] || {scale:1, ox:0, oy:0};
     cellEditStartOx = t.ox;
     cellEditStartOy = t.oy;
+    cellEditPrevX = e.clientX;
+    cellEditPrevY = e.clientY;
     cellEl.style.cursor = 'grabbing';
     e.preventDefault();
   });
@@ -1750,11 +1772,17 @@ body{
     var cellRect = cellEl.getBoundingClientRect();
     var cellW = cellRect.width || 1;
     var cellH = cellRect.height || 1;
-    var dx = (e.clientX - cellEditStartX) / cellW;
-    var dy = (e.clientY - cellEditStartY) / cellH;
+    // 增量计算：按上一帧位置的差值累加，避免起始锚点回跳
+    var ddx = (e.clientX - cellEditPrevX) / cellW;
+    var ddy = (e.clientY - cellEditPrevY) / cellH;
+    cellEditPrevX = e.clientX;
+    cellEditPrevY = e.clientY;
     var t = cellTransforms[editingCell] || {scale:1, ox:0, oy:0};
-    var newOx = Math.max(-1, Math.min(1, cellEditStartOx + dx));
-    var newOy = Math.max(-1, Math.min(1, cellEditStartOy + dy));
+    var newOx = t.ox + ddx;
+    var newOy = t.oy + ddy;
+    // ox/oy 范围夹取
+    newOx = Math.max(-1, Math.min(1, newOx));
+    newOy = Math.max(-1, Math.min(1, newOy));
     applyCellEditTransform(t.scale, newOx, newOy);
   });
 
@@ -1788,6 +1816,8 @@ body{
       cellTouchMode = 'pan';
       cellEditStartX = e.touches[0].clientX;
       cellEditStartY = e.touches[0].clientY;
+      cellEditPrevX = cellEditStartX;
+      cellEditPrevY = cellEditStartY;
       cellTouchStartOx = t.ox;
       cellTouchStartOy = t.oy;
     }
@@ -1812,10 +1842,13 @@ body{
       var cellH = cellRect.height || 1;
       var curX = e.touches[0].clientX;
       var curY = e.touches[0].clientY;
-      var dx = (curX - cellEditStartX) / cellW;
-      var dy = (curY - cellEditStartY) / cellH;
-      var newOx = Math.max(-1, Math.min(1, cellTouchStartOx + dx));
-      var newOy = Math.max(-1, Math.min(1, cellTouchStartOy + dy));
+      // 增量累加，避免起始锚点回跳
+      var ddx = (curX - cellEditPrevX) / cellW;
+      var ddy = (curY - cellEditPrevY) / cellH;
+      cellEditPrevX = curX;
+      cellEditPrevY = curY;
+      var newOx = Math.max(-1, Math.min(1, t.ox + ddx));
+      var newOy = Math.max(-1, Math.min(1, t.oy + ddy));
       applyCellEditTransform(t.scale, newOx, newOy);
       try { if (e.cancelable) e.preventDefault(); } catch(_) {}
     }
