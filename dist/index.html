@@ -387,52 +387,113 @@ body{
     });
   });
 
-  // 下载
-  downloadBtn.addEventListener('click',downloadCollage);
+  // 下载 / 保存
+  downloadBtn.addEventListener('click', downloadCollage);
+
+  var isMobile = /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent);
+
   function downloadCollage(){
-    var filled=cells.map(function(c,i){return c?i:-1}).filter(function(i){return i>=0});
-    if(!filled.length){alert('请先添加图片');return;}
-    downloadBtn.disabled=true;
-    var loadingTimer=setTimeout(function(){downloadBtn.disabled=false;},5000);
-    var tasks=filled.map(function(idx){
+    var filled = cells.map(function(c, i){return c ? i : -1}).filter(function(i){return i >= 0});
+    if (!filled.length) { alert('请先添加图片'); return; }
+    downloadBtn.disabled = true;
+
+    var tasks = filled.map(function(idx){
       return new Promise(function(resolve){
-        var img=new Image();
-        img.onload=function(){resolve({img:img,idx:idx});};
-        img.onerror=function(){resolve({img:null,idx:idx});};
-        img.src=cells[idx];
+        var img = new Image();
+        img.onload = function(){ resolve({ img: img, idx: idx }); };
+        img.onerror = function(){ resolve({ img: null, idx: idx }); };
+        img.src = cells[idx];
       });
     });
+
     Promise.all(tasks).then(function(results){
-      var size=2000,n=currentSize;
-      var cellSize=Math.floor(size/n);
-      var canvas=document.createElement('canvas');
-      canvas.width=size;canvas.height=size;
-      var ctx=canvas.getContext('2d');
-      ctx.fillStyle='#ffffff';ctx.fillRect(0,0,size,size);
-      for(var i=0;i<n*n;i++){
-        var col=i%n,row=Math.floor(i/n);
-        var x=col*cellSize,y=row*cellSize;
-        ctx.strokeStyle='#e0e0e0';ctx.lineWidth=2;
-        ctx.strokeRect(x,y,cellSize,cellSize);
-        var found=results.find(function(r){return r.idx===i});
-        if(found && found.img && found.img.complete && found.img.naturalWidth>0){
-          var img=found.img;
-          var iw=img.naturalWidth,ih=img.naturalHeight;
-          var ratio=Math.min(cellSize/iw,cellSize/ih);
-          var dw=iw*ratio,dh=ih*ratio;
-          var dx=x+(cellSize-dw)/2,dy=y+(cellSize-dh)/2;
-          ctx.drawImage(img,dx,dy,dw,dh);
+      var size = 2000, n = currentSize;
+      var cellSize = Math.floor(size / n);
+      var canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#1a1a24';
+      ctx.fillRect(0, 0, size, size);
+
+      for (var i = 0; i < n * n; i++){
+        var col = i % n, row = Math.floor(i / n);
+        var x = col * cellSize, y = row * cellSize;
+        var found = results.find(function(r){ return r.idx === i; });
+        if (found && found.img && found.img.complete && found.img.naturalWidth > 0){
+          var img = found.img;
+          var iw = img.naturalWidth, ih = img.naturalHeight;
+          // cover 模式：裁切填充，与预览一致
+          var scale = Math.max(cellSize / iw, cellSize / ih);
+          var dw = iw * scale, dh = ih * scale;
+          var dx = x + (cellSize - dw) / 2, dy = y + (cellSize - dh) / 2;
+          ctx.drawImage(img, dx, dy, dw, dh);
         }
       }
+
+      // 去掉格子间的线，所见即所得
+      // 输出为图片
       canvas.toBlob(function(blob){
-        if(!blob){downloadBtn.disabled=false;return;}
-        var url=URL.createObjectURL(blob);
-        var a=document.createElement('a');
-        a.href=url;a.setAttribute('download','piccutter_'+n+'x'+n+'.png');
-        document.body.appendChild(a);a.click();document.body.removeChild(a);
-        setTimeout(function(){URL.revokeObjectURL(url);clearTimeout(loadingTimer);downloadBtn.disabled=false;},2000);
-      },'image/png');
+        if (!blob) { downloadBtn.disabled = false; return; }
+        var url = URL.createObjectURL(blob);
+
+        if (isMobile){
+          // 移动端：全屏预览 + 长按保存
+          showSaveOverlay(url);
+        } else {
+          // 桌面端：直接下载
+          var a = document.createElement('a');
+          a.href = url;
+          a.setAttribute('download', 'piccutter_' + n + 'x' + n + '.png');
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function(){ URL.revokeObjectURL(url); downloadBtn.disabled = false; }, 2000);
+        }
+      }, 'image/png');
     });
+  }
+
+  // 移动端保存到相册的 overlay
+  function showSaveOverlay(imgUrl){
+    var overlay = document.createElement('div');
+    overlay.id = 'saveOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;';
+
+    var title = document.createElement('div');
+    title.style.cssText = 'color:#fff;font-size:1rem;margin-bottom:16px;text-align:center;font-weight:600;';
+    title.textContent = '长按图片保存到相册';
+
+    var imgBox = document.createElement('div');
+    imgBox.style.cssText = 'max-width:90vw;max-height:65vh;overflow:hidden;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.5);';
+
+    var previewImg = document.createElement('img');
+    previewImg.src = imgUrl;
+    previewImg.style.cssText = 'width:100%;height:auto;display:block;pointer-events:auto;';
+    previewImg.alt = '长按保存到相册';
+
+    imgBox.appendChild(previewImg);
+
+    var closeBtn = document.createElement('button');
+    closeBtn.textContent = '关闭';
+    closeBtn.style.cssText = 'margin-top:20px;padding:10px 30px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);border-radius:8px;color:#fff;font-size:.9rem;cursor:pointer;';
+    closeBtn.addEventListener('click', function(){
+      document.body.removeChild(overlay);
+      URL.revokeObjectURL(imgUrl);
+      downloadBtn.disabled = false;
+    });
+
+    overlay.appendChild(title);
+    overlay.appendChild(imgBox);
+    overlay.appendChild(closeBtn);
+    overlay.addEventListener('click', function(e){
+      if (e.target === overlay) {
+        document.body.removeChild(overlay);
+        URL.revokeObjectURL(imgUrl);
+        downloadBtn.disabled = false;
+      }
+    });
+
+    document.body.appendChild(overlay);
   }
 
   buildGrid(3);
@@ -443,9 +504,11 @@ body{
   var gridScale = 1;
   var MIN_SCALE = 0.5;
   var MAX_SCALE = 5.0;
-  var panX = 0, panY = 0;            // 放大后的平移偏移
+  var panX = 0, panY = 0;
   var isPanning = false;
   var panStartX = 0, panStartY = 0;
+  var touchMoved = false;
+  var lastTouchX = 0, lastTouchY = 0;
 
   function applyTransform() {
     wrapInner.style.transform = 'translate(' + panX + 'px,' + panY + 'px) scale(' + gridScale + ')';
@@ -458,14 +521,12 @@ body{
     var delta = -e.deltaY * 0.0025;
     var old = gridScale;
     gridScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, gridScale + delta));
-    // 缩放接近 1 时自动回正，防止边界残留平移
     if (gridScale <= 1.05) { gridScale = 1; resetPan(); applyTransform(); return; }
-    // 以区域中心为锚点
     applyAnchorZoom(e.clientX, e.clientY, wrapOuter.getBoundingClientRect(), old, gridScale);
   }, { passive: false });
 
   function applyAnchorZoom(cx, cy, rect, oldScale, newScale) {
-    var fx = (cx - rect.left) / rect.width - 0.5;     // 相对中心 (-0.5 ~ 0.5)
+    var fx = (cx - rect.left) / rect.width - 0.5;
     var fy = (cy - rect.top) / rect.height - 0.5;
     var dw = (newScale - oldScale) * (wrapInner.offsetWidth || rect.width);
     var dh = (newScale - oldScale) * (wrapInner.offsetHeight || rect.height);
@@ -478,10 +539,9 @@ body{
   var pinchStartDist = 0;
   var pinchStartScale = 1;
   var pinchCenterX = 0, pinchCenterY = 0;
-  var tStartX = 0, tStartY = 0;
-  var tStartPanX = 0, tStartPanY = 0;
 
   wrapOuter.addEventListener('touchstart', function (e) {
+    touchMoved = false;
     if (e.touches.length === 2) {
       var t1 = e.touches[0], t2 = e.touches[1];
       pinchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
@@ -489,13 +549,14 @@ body{
       pinchCenterX = (t1.clientX + t2.clientX) / 2;
       pinchCenterY = (t1.clientY + t2.clientY) / 2;
       isPanning = false;
+      e.preventDefault();
     } else if (e.touches.length === 1 && gridScale > 1.01) {
       isPanning = true;
-      tStartX = e.touches[0].clientX;
-      tStartY = e.touches[0].clientY;
+      lastTouchX = e.touches[0].clientX;
+      lastTouchY = e.touches[0].clientY;
       tStartPanX = panX; tStartPanY = panY;
     }
-  }, { passive: true });
+  }, { passive: false });
 
   wrapOuter.addEventListener('touchmove', function (e) {
     if (e.touches.length === 2) {
@@ -508,15 +569,24 @@ body{
       if (gridScale <= 1.05) { gridScale = 1; resetPan(); applyTransform(); return; }
       applyAnchorZoom(pinchCenterX, pinchCenterY, wrapOuter.getBoundingClientRect(), old, gridScale);
       e.preventDefault();
+      touchMoved = true;
     } else if (e.touches.length === 1 && isPanning) {
-      panX = tStartPanX + (e.touches[0].clientX - tStartX);
-      panY = tStartPanY + (e.touches[0].clientY - tStartY);
+      var dx = e.touches[0].clientX - lastTouchX;
+      var dy = e.touches[0].clientY - lastTouchY;
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) touchMoved = true;
+      panX = tStartPanX + (e.touches[0].clientX - lastTouchX);
+      panY = tStartPanY + (e.touches[0].clientY - lastTouchY);
       applyTransform();
+      lastTouchX = e.touches[0].clientX;
+      lastTouchY = e.touches[0].clientY;
       e.preventDefault();
     }
   }, { passive: false });
 
-  wrapOuter.addEventListener('touchend', function () { isPanning = false; });
+  wrapOuter.addEventListener('touchend', function () {
+    isPanning = false;
+    if (touchMoved) e.preventDefault();
+  });
 
   // 双击恢复
   var lastTap = 0;
@@ -524,12 +594,68 @@ body{
     var now = Date.now();
     if (now - lastTap < 300 && gridScale !== 1) {
       gridScale = 1; resetPan(); applyTransform();
+      e.preventDefault();
     }
     lastTap = now;
   });
   wrapOuter.addEventListener('dblclick', function () {
     gridScale = 1; resetPan(); applyTransform();
   });
+
+  /* ============== 鼠标拖拽平移：放大后支持拖动 ============== */
+  var isMouseDragging = false;
+  var mouseStartX = 0, mouseStartY = 0;
+  var mousePanStartX = 0, mousePanStartY = 0;
+
+  wrapOuter.addEventListener('mousedown', function (e) {
+    if (gridScale <= 1) return;
+    isMouseDragging = true;
+    mouseStartX = e.clientX;
+    mouseStartY = e.clientY;
+    mousePanStartX = panX;
+    mousePanStartY = panY;
+    wrapOuter.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function (e) {
+    if (!isMouseDragging) return;
+    var dx = e.clientX - mouseStartX;
+    var dy = e.clientY - mouseStartY;
+    var maxPanX = getMaxPan('x');
+    var maxPanY = getMaxPan('y');
+    panX = Math.max(-maxPanX, Math.min(maxPanX, mousePanStartX + dx));
+    panY = Math.max(-maxPanY, Math.min(maxPanY, mousePanStartY + dy));
+    applyTransform();
+  });
+
+  document.addEventListener('mouseup', function () {
+    isMouseDragging = false;
+    wrapOuter.style.cursor = '';
+  });
+
+  wrapOuter.addEventListener('mouseleave', function () {
+    if (!isMouseDragging && gridScale > 1) {
+      wrapOuter.style.cursor = 'grab';
+    }
+  });
+  wrapOuter.addEventListener('mouseenter', function () {
+    if (!isMouseDragging && gridScale > 1) {
+      wrapOuter.style.cursor = 'grab';
+    }
+  });
+
+  function getMaxPan(axis) {
+    var scaledW = (gridEl.offsetWidth || 0) * gridScale;
+    var scaledH = (gridEl.offsetHeight || 0) * gridScale;
+    var containerW = wrapOuter.clientWidth || 0;
+    var containerH = wrapOuter.clientHeight || 0;
+    if (axis === 'x') {
+      return Math.max(0, (scaledW - containerW) / 2);
+    } else {
+      return Math.max(0, (scaledH - containerH) / 2);
+    }
+  }
 
 })();
 </script>
