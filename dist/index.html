@@ -23,9 +23,10 @@
   --outer-gap:0px;
   --cell-radius:0px;
   --gap-color:#1a1a24;
+  --canvas-ratio:1;
   --toolbar-h:56px;
   --tabbar-h:230px;
-  --tabbar-tab-h:44px;
+  --tabbar-tab-h:42px;
 }
 html,body{width:100%;height:100%;overflow:hidden}
 body{
@@ -102,11 +103,15 @@ body{
   padding:var(--outer-gap);
   border-radius:0;
   border:1px solid var(--border);
-  width:calc(100vh - var(--toolbar-h) - var(--tabbar-h) - 20px);
-  max-width:calc(100vw - 20px);
-  aspect-ratio:1/1;
+  /* 尺寸由 JS 根据 --canvas-ratio + 容器尺寸显式计算，避免 CSS aspect-ratio 单轴约束问题 */
+  min-width: 0;
+  min-height: 0;
   flex-shrink:0;
 }
+/* 画布模板列/行：由 JS 的 buildGrid 同步注入列数，保证网格均分 W:H 比例 */
+.grid[data-n="2"]{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr)}
+.grid[data-n="3"]{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr)}
+.grid[data-n="4"]{grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr)}
 .cell{
   background:var(--surface2);
   position:relative;
@@ -217,49 +222,98 @@ body{
   text-align:right;
 }
 
-/* 相框样式 2x2 grid：一行两个滑动条，空间压缩 */
+/* 相框样式 2x2 grid：一行 = 图标 + 滑块 + 数值 */
 .frame-grid{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:8px 14px;
+  gap:10px 14px;
   width:100%;
   max-width:640px;
+  padding:2px 4px 8px;
 }
 .frame-slider,
 .frame-color{
   display:flex;
-  flex-direction:column;
-  gap:4px;
+  align-items:center;
+  gap:8px;
   min-width:0;
+  height:38px;
+  padding:0 10px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px;
 }
-.frame-slider-head,
-.frame-color .frame-slider-head{
-  display:flex;align-items:center;justify-content:space-between;gap:8px;
+.frame-slider--wide{
+  height:40px;
 }
-.frame-slider-body,
-.frame-color-body{
-  display:flex;align-items:center;gap:8px;width:100%;
+.panel-icon{
+  flex-shrink:0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:24px;height:24px;
+  background:var(--surface2);
+  border-radius:7px;
+  color:var(--text-dim);
+  line-height:1;
 }
-.frame-slider-body input[type=range],
-.frame-color-body input[type=range]{
+.panel-icon svg{width:16px;height:16px;display:block;}
+.frame-range{
   flex:1;
-  height:5px;
+  height:22px;
   -webkit-appearance:none;
   appearance:none;
-  background:var(--surface2);
-  border-radius:3px;
+  background:transparent;
   outline:none;
   cursor:pointer;
-  accent-color:var(--accent);
   min-width:0;
+  touch-action: pan-x;
+  -webkit-user-select:none;
+  user-select:none;
 }
-.range-tick{
-  font-size:.72rem;
-  color:var(--text-dim);
-  white-space:nowrap;
+.frame-range::-webkit-slider-runnable-track{
+  height:8px;
+  border-radius:4px;
+  background:var(--surface2);
+}
+.frame-range::-moz-range-track{
+  height:8px;
+  border-radius:4px;
+  background:var(--surface2);
+  border:none;
+}
+.frame-range::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  appearance:none;
+  width:22px;height:22px;
+  border-radius:50%;
+  background:var(--accent);
+  border:2px solid #fff;
+  box-shadow:0 0 0 1px var(--border);
+  cursor:pointer;
+  margin-top:0;
+}
+.frame-range::-moz-range-thumb{
+  width:22px;height:22px;
+  border-radius:50%;
+  background:var(--accent);
+  border:2px solid #fff;
+  box-shadow:0 0 0 1px var(--border);
+  cursor:pointer;
+}
+.frame-color-body{
+  display:flex;align-items:center;gap:6px;flex:1;min-width:0;
+}
+.tabbar-slider-val{
+  flex-shrink:0;
+  min-width:44px;
+  text-align:right;
+  font-size:.78rem;
+  color:var(--text);
+  font-variant-numeric: tabular-nums;
 }
 
-/* 间隙背景色 按钮：统一 22px，更紧凑 */
+/* 间隙背景色 按钮 */
 .gap-color-btn{
   width:22px;height:22px;
   border-radius:6px;
@@ -312,23 +366,27 @@ body{
 .output-cols{
   display:flex;
   flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:14px;
+  align-items:stretch;
+  justify-content:flex-start;
+  gap:10px;
   width:100%;
   max-width:560px;
-  padding:4px 0;
+  padding:2px 0;
 }
 .output-row{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:12px;
+  gap:10px;
   width:100%;
   flex-wrap:wrap;
 }
+.output-download{
+  margin-top:2px;
+  width:100%;
+}
 .output-tip{
-  font-size:.72rem;
+  font-size:.7rem;
   color:var(--text-dim);
   text-align:center;
   line-height:1.4;
@@ -349,16 +407,22 @@ body{
   .action-btn{padding:6px 10px;font-size:.75rem}
   .count-info{font-size:.7rem}
   .grid-wrap{padding:6px}
-  .grid{width:calc(100vh - var(--toolbar-h) - var(--tabbar-h) - 12px);max-width:calc(100vw - 12px)}
   .cell .placeholder{font-size:.65rem}
   .cell .placeholder svg{width:18px;height:18px}
   .tabbar-tab{font-size:.72rem;letter-spacing:0;font-weight:500;padding:0 4px}
   .panel-btn{padding:6px 10px;font-size:.75rem}
   .panel-label{font-size:.7rem}
-  .frame-grid{gap:6px 10px}
-  .frame-slider-val{font-size:.75rem}
-  .range-tick{font-size:.68rem}
-  .tabbar-slider-val{font-size:.75rem;min-width:36px}
+  .frame-grid{gap:8px 10px;padding:0 2px 4px}
+  .frame-slider,.frame-color{height:34px;padding:0 8px;border-radius:9px;gap:6px}
+  .frame-slider--wide{height:36px}
+  .panel-icon{width:22px;height:22px;border-radius:6px}
+  .panel-icon svg{width:15px;height:15px}
+  .frame-range{height:20px}
+  .frame-range::-webkit-slider-thumb{width:20px;height:20px}
+  .frame-range::-webkit-slider-runnable-track{height:7px}
+  .frame-range::-moz-range-thumb{width:20px;height:20px}
+  .frame-range::-moz-range-track{height:7px}
+  .tabbar-slider-val{font-size:.72rem;min-width:36px}
   .gap-color-btn,.gap-color-custom{width:20px;height:20px;border-radius:5px}
   .hint{font-size:.65rem;padding:5px 10px}
 }
@@ -369,12 +433,10 @@ body{
 <!-- 顶部工具栏 -->
 <div class="topbar">
   <div class="topbar-left">
-    <div class="logo">Pic<span>Cutter</span><span style="color:var(--text-dim);font-size:.7rem;margin-left:6px;font-weight:400;letter-spacing:0">v1.4</span></div>
-    <span class="count-info" id="countInfo">0 / 9</span>
+    <div class="logo">Pic<span>Cutter</span><span style="color:var(--text-dim);font-size:.7rem;margin-left:6px;font-weight:400;letter-spacing:0">v2.0.5</span></div>
   </div>
   <div class="topbar-right">
     <button class="action-btn danger" id="clearBtn">清空</button>
-    <button class="action-btn" id="downloadBtn" disabled>下载</button>
   </div>
 </div>
 
@@ -402,51 +464,72 @@ body{
   </div>
   <div class="tabbar-panel" data-panel="frame">
     <div class="frame-grid">
-      <div class="frame-slider">
-        <div class="frame-slider-head">
-          <span class="panel-label" style="margin:0">图片之间</span>
-          <span id="cellGapValue" class="tabbar-slider-val">0 px</span>
-        </div>
-        <div class="frame-slider-body">
-          <span class="range-tick">0</span>
-          <input type="range" id="cellGapRange" min="0" max="60" value="0" step="1">
-          <span class="range-tick">60</span>
-        </div>
+      <!-- 画布比例（第 1 行跨 2 列） -->
+      <div class="frame-slider frame-slider--wide" style="grid-column:span 2">
+        <span class="panel-icon" title="画布比例">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="5" width="14" height="14" rx="2"/>
+            <path d="M17 5h4v14H7" opacity=".35"/>
+            <path d="M17 5v14" stroke-dasharray="2 2"/>
+            <path d="M3 19H17"/>
+          </svg>
+        </span>
+        <input type="range" id="ratioRange" min="0" max="100" value="50" step="1" class="frame-range">
+        <span id="ratioValue" class="tabbar-slider-val">1 : 1</span>
       </div>
+      <!-- 图片之间间隙 -->
       <div class="frame-slider">
-        <div class="frame-slider-head">
-          <span class="panel-label" style="margin:0">外边界</span>
-          <span id="outerGapValue" class="tabbar-slider-val">0 px</span>
-        </div>
-        <div class="frame-slider-body">
-          <span class="range-tick">0</span>
-          <input type="range" id="outerGapRange" min="0" max="80" value="0" step="1">
-          <span class="range-tick">80</span>
-        </div>
+        <span class="panel-icon" title="图片之间间隙">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="7" height="16" rx="1"/>
+            <rect x="14" y="4" width="7" height="16" rx="1"/>
+            <path d="M10.5 8.5v7" stroke-dasharray="2 1.5" opacity=".7"/>
+            <path d="M13.5 8.5v7" stroke-dasharray="2 1.5" opacity=".7"/>
+          </svg>
+        </span>
+        <input type="range" id="cellGapRange" min="0" max="60" value="0" step="1" class="frame-range">
+        <span id="cellGapValue" class="tabbar-slider-val">0 px</span>
       </div>
+      <!-- 外边界间隙 -->
       <div class="frame-slider">
-        <div class="frame-slider-head">
-          <span class="panel-label" style="margin:0">圆角</span>
-          <span id="radiusValue" class="tabbar-slider-val">0 px</span>
-        </div>
-        <div class="frame-slider-body">
-          <span class="range-tick">0</span>
-          <input type="range" id="radiusRange" min="0" max="60" value="0" step="1">
-          <span class="range-tick">60</span>
-        </div>
+        <span class="panel-icon" title="外边界间隙">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <rect x="7" y="7" width="10" height="10" rx="1" opacity=".85"/>
+            <path d="M3 12h4M17 12h4M12 3v4M12 17v4" opacity=".35"/>
+          </svg>
+        </span>
+        <input type="range" id="outerGapRange" min="0" max="80" value="0" step="1" class="frame-range">
+        <span id="outerGapValue" class="tabbar-slider-val">0 px</span>
       </div>
+      <!-- 圆角 -->
+      <div class="frame-slider">
+        <span class="panel-icon" title="单张图片圆角">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 13V7a4 4 0 0 0-4-4h-6"/>
+            <rect x="3" y="3" width="18" height="18" rx="3" opacity=".85"/>
+            <path d="M4 13h6a3 3 0 0 1 3 3v4" opacity=".28"/>
+          </svg>
+        </span>
+        <input type="range" id="radiusRange" min="0" max="60" value="0" step="1" class="frame-range">
+        <span id="radiusValue" class="tabbar-slider-val">0 px</span>
+      </div>
+      <!-- 背景色 -->
       <div class="frame-color">
-        <div class="frame-slider-head">
-          <span class="panel-label" style="margin:0">背景色</span>
-        </div>
+        <span class="panel-icon" title="间隙背景色">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22c-4.4 0-8-3.4-8-7.6C4 11 8 8 12 8s8 3 8 6.4C20 18.6 16.4 22 12 22z"/>
+            <path d="M7 9l2.2-4.1c.5-1 1.8-1 2.3 0L13.5 9M5.5 15.5a2 2 0 1 0 0-4M18.5 15.5a2 2 0 1 0 0-4M12 18.5a2.3 2.3 0 1 0 0-4.6"/>
+          </svg>
+        </span>
         <div class="frame-color-body">
           <button type="button" data-gap-color="#000000" class="gap-color-btn" title="纯黑"></button>
           <button type="button" data-gap-color="#ffffff" class="gap-color-btn" title="纯白"></button>
           <label class="gap-color-custom" title="自定义颜色">
             <input type="color" id="gapColorPicker" value="#1a1a24">
           </label>
-          <span id="gapColorLabel" class="tabbar-slider-val" style="margin-left:4px">#1A1A24</span>
         </div>
+        <span id="gapColorLabel" class="tabbar-slider-val">#1A1A24</span>
       </div>
     </div>
   </div>
@@ -461,6 +544,9 @@ body{
         <button type="button" class="quality-btn panel-btn active" data-quality="2800" style="padding:5px 10px;font-size:.75rem">高清 2.8K</button>
         <button type="button" class="quality-btn panel-btn" data-quality="3600" style="padding:5px 10px;font-size:.75rem">超清 3.6K</button>
         <button type="button" class="quality-btn panel-btn" data-quality="0" style="padding:5px 10px;font-size:.75rem">原图级</button>
+      </div>
+      <div class="output-download">
+        <button class="action-btn" id="downloadBtn" style="width:100%;justify-content:center;padding:10px 14px;font-size:.9rem" disabled>下载拼图</button>
       </div>
       <div class="output-tip">
         PNG 无损格式 · 高清为默认推荐档
@@ -478,7 +564,6 @@ body{
   var fileInput=document.getElementById('fileInput');
   var clearBtn=document.getElementById('clearBtn');
   var downloadBtn=document.getElementById('downloadBtn');
-  var countInfo=document.getElementById('countInfo');
   var hint=document.getElementById('hint');
   var currentSize=3;
   var selectedCellIdx=-1;
@@ -487,11 +572,13 @@ body{
   var currentOuterGap = 0;  // 图片与外边界
   var currentRadius = 0;    // 单张图片圆角
   var currentGapColor = '#1a1a24';  // 间隙背景色（grid背景）
+  var currentRatio = 1;     // 画布宽高比 W:H (0.5=1:2, 1=1:1, 2=2:1)
   var currentQuality = 2800; // 输出清晰度：0=原图级，>0=目标短边像素
   var cellGapRangeEl = null, cellGapValueEl = null;
   var outerGapRangeEl = null, outerGapValueEl = null;
   var radiusRangeEl = null, radiusValueEl = null;
   var gapColorPickerEl = null, gapColorLabelEl = null;
+  var ratioRangeEl = null, ratioValueEl = null;
   var qualityLabelEl = null;
 
   function toHexColor(c){
@@ -553,6 +640,62 @@ body{
       }
     });
   }
+  // 画布比例：滑块 0~100 → ratio 0.5~2，用几何插值保证 50=1:1 正中
+  //   ratio = 2 ^ ((v-50)/50)  →  v=0 → 2^-1=0.5(1:2), v=50→1(1:1), v=100→2^1=2(2:1)
+  function sliderToRatio(v){
+    v = Math.max(0, Math.min(100, v - 0));
+    var t = (v - 50) / 50;
+    return Math.pow(2, t);
+  }
+  function ratioToSlider(r){
+    r = Math.max(0.5, Math.min(2, r));
+    var t = Math.log(r) / Math.log(2); // t ∈ [-1,1]
+    return Math.round(50 + t * 50);
+  }
+  function formatRatioText(r){
+    // 输出 W:H 文本，优先常见比例，否则 3 位小数近似
+    r = Math.max(0.5, Math.min(2, r));
+    function fmt(a,b){ return a + ' : ' + b; }
+    function near(a,b){ return Math.abs(a-b) < 0.01; }
+    if (near(r, 1))   return fmt(1,1);
+    if (near(r, 0.5)) return fmt(1,2);
+    if (near(r, 2))   return fmt(2,1);
+    if (near(r, 2/3)) return fmt(2,3);
+    if (near(r, 3/4)) return fmt(3,4);
+    if (near(r, 3/2)) return fmt(3,2);
+    if (near(r, 4/3)) return fmt(4,3);
+    if (near(r, 5/4)) return fmt(5,4);
+    if (near(r, 4/5)) return fmt(4,5);
+    if (near(r, 9/16)) return fmt(9,16);
+    if (near(r, 16/9)) return fmt(16,9);
+    // 兜底：约成整数，比如 1.2 → 6:5
+    var bestDiff = 1e9, bestA = 1, bestB = 1;
+    for (var b = 1; b <= 20; b++){
+      var a = Math.round(r * b);
+      if (a < 1) a = 1;
+      if (a > 40) continue;
+      var diff = Math.abs(r - a/b);
+      if (diff < bestDiff){ bestDiff = diff; bestA = a; bestB = b; }
+    }
+    return fmt(bestA, bestB);
+  }
+  function setRatio(v){
+    var r;
+    if (typeof v === 'number' && v <= 100) {
+      // 传入滑块值 0~100
+      r = sliderToRatio(v);
+      if (ratioRangeEl && +ratioRangeEl.value !== v) ratioRangeEl.value = String(Math.round(v));
+    } else {
+      r = Math.max(0.5, Math.min(2, v || 1));
+      var slider = ratioToSlider(r);
+      if (ratioRangeEl && +ratioRangeEl.value !== slider) ratioRangeEl.value = String(slider);
+    }
+    currentRatio = r;
+    document.documentElement.style.setProperty('--canvas-ratio', String(r));
+    if (ratioValueEl) ratioValueEl.textContent = formatRatioText(r);
+    // 比例变化后立即重算 grid 尺寸（contain 适配容器）
+    try { fitGridToContainer(); } catch(_) {}
+  }
   function setQuality(px){
     px = (px === 0 || px > 0) ? Math.floor(px) : 2800;
     if (px > 6000) px = 6000; // 安全上限：避免 4 亿+像素手机原图
@@ -580,10 +723,13 @@ body{
       radiusValueEl = document.getElementById('radiusValue');
       gapColorPickerEl = document.getElementById('gapColorPicker');
       gapColorLabelEl = document.getElementById('gapColorLabel');
+      ratioRangeEl = document.getElementById('ratioRange');
+      ratioValueEl = document.getElementById('ratioValue');
       qualityLabelEl = document.getElementById('qualityLabel');
       if (cellGapRangeEl) cellGapRangeEl.addEventListener('input', function(){ setCellGap(+this.value); });
       if (outerGapRangeEl) outerGapRangeEl.addEventListener('input', function(){ setOuterGap(+this.value); });
       if (radiusRangeEl) radiusRangeEl.addEventListener('input', function(){ setRadius(+this.value); });
+      if (ratioRangeEl)  ratioRangeEl.addEventListener('input', function(){ setRatio(+this.value); });
       if (gapColorPickerEl) gapColorPickerEl.addEventListener('input', function(){ setGapColor(this.value, true); });
       document.querySelectorAll('.gap-color-btn').forEach(function(btn){
         btn.addEventListener('click', function(){ setGapColor(this.getAttribute('data-gap-color') || '#1a1a24'); });
@@ -594,6 +740,7 @@ body{
       setCellGap(0);
       setOuterGap(0);
       setRadius(0);
+      setRatio(50);  // 滑块默认 50 → 比例 1:1
       setGapColor('#1a1a24');
       setQuality(2800);
     } catch (e) {
@@ -695,12 +842,14 @@ body{
     var old=cells.slice();
     cells=[];
     for(var i=0;i<total;i++){cells.push(old[i]||null);}
+    if (gridEl) gridEl.setAttribute('data-n', String(n));
     render();
     updateCount();
   }
 
   function render(){
     var n=currentSize;
+    gridEl.setAttribute('data-n', String(n));
     gridEl.style.gridTemplateColumns='repeat('+n+',1fr)';
     gridEl.style.gridTemplateRows='repeat('+n+',1fr)';
     gridEl.innerHTML='';
@@ -719,6 +868,41 @@ body{
       cell.addEventListener('click',onCellClick);
       gridEl.appendChild(cell);
     }
+    // 每次 render 后重新测量容器尺寸，显式设置 grid 的 width/height（按比例 contain 适配）
+    fitGridToContainer();
+  }
+
+  // 根据当前画布比例 + 容器可用尺寸，用"contain"规则算出 grid 的实际宽高
+  function fitGridToContainer(){
+    if (!gridEl) return;
+    var wrap = document.getElementById('gridWrapInner');
+    if (!wrap) return;
+    var rect = wrap.getBoundingClientRect();
+    var contW = Math.max(1, rect.width - 20);  // 预留 padding
+    var contH = Math.max(1, rect.height - 20);
+    var ratio = Math.max(0.5, Math.min(2, currentRatio || 1));
+    // contain：按比例缩放，W/H 都不超过容器
+    var gw, gh;
+    if (contW / contH >= ratio) {
+      // 宽容器按高约束
+      gh = contH;
+      gw = gh * ratio;
+      if (gw > contW) { gw = contW; gh = gw / ratio; }
+    } else {
+      // 窄容器按宽约束
+      gw = contW;
+      gh = gw / ratio;
+      if (gh > contH) { gh = contH; gw = gh * ratio; }
+    }
+    gw = Math.max(1, Math.round(gw));
+    gh = Math.max(1, Math.round(gh));
+    gridEl.style.width = gw + 'px';
+    gridEl.style.height = gh + 'px';
+    // 重置缩放平移（尺寸变化后）
+    gridScale = 1;
+    panX = 0;
+    panY = 0;
+    try { applyTransform(); } catch(_) {}
   }
 
   function bindCellLongPress(cell, idx, isFilled){
@@ -786,9 +970,8 @@ body{
   function updateCount(){
     var filled=cells.filter(Boolean).length;
     var total=cells.length;
-    countInfo.textContent=filled+' / '+total;
-    downloadBtn.disabled=filled===0;
-    hint.style.display=filled>0?'none':'block';
+    if (downloadBtn) downloadBtn.disabled = (filled === 0);
+    if (hint) hint.style.display = filled > 0 ? 'none' : 'block';
   }
 
   fileInput.addEventListener('change',function(e){
@@ -878,61 +1061,88 @@ body{
 
     Promise.all(tasks).then(function(results){
       var n = currentSize;
+      var ratio = Math.max(0.5, Math.min(2, currentRatio || 1)); // W:H, 0.5~2
       var cellGapCss = Math.max(0, Math.min(60, Math.floor(currentCellGap)));
       var outerGapCss = Math.max(0, Math.min(80, Math.floor(currentOuterGap)));
       var radiusCss = Math.max(0, Math.min(60, Math.floor(currentRadius)));
       var gapColorCss = toHexColor(currentGapColor || '#1a1a24');
       var quality = (currentQuality > 6000) ? 6000 : (currentQuality >= 0 ? currentQuality : 2800);
 
-      // 1. 确定基准尺寸：quality>0 直接用；quality=0 按所有填图格的 "cover 目标像素最大值" 推导，保证不小于原图
-      var baseOut;
+      // 1. 确定基准尺寸：shortSide = 短边 = quality 目标像素
+      //    quality>0 → shortSide = quality;
+      //    quality=0 原图级 → 按"cover 需要的短边像素最大"推导 shortSide = maxCellPx，保证不小于原图
+      var shortSide;
       if (quality > 0) {
-        baseOut = quality;
+        shortSide = quality;
       } else {
         var maxCellPx = 0;
         results.forEach(function(r){
           if (r && r.img && r.img.naturalWidth>0 && r.img.naturalHeight>0) {
-            // cover 下该图至少需要的单边像素 = min(图宽, 图高)
+            // cover 下：目标 cellW × cellH 中要求原图至少 min(imgW, min(imgH × cellW/cellH, ...)) 的最小值等于 max( min(imgW,imgH*(cellW/cellH)), min(imgW*(cellH/cellW), imgH) )
+            // 简化：取 min(图宽, 图高) 为"至少需要的像素"，再乘以 shortSide 方向
             var s = Math.min(r.img.naturalWidth, r.img.naturalHeight);
             if (s > maxCellPx) maxCellPx = s;
           }
         });
         if (maxCellPx < 1) maxCellPx = 2000;
-        // 图级导出：总边 = n*cell + (n-1)*cellGapCss + 2*outerGapCss（cellGap/outerGap按预览css像素比等价放大）
-        var est = Math.ceil(maxCellPx * n + Math.max(0,(n-1)) * cellGapCss + 2 * outerGapCss);
-        baseOut = Math.min(6000, est); // 安全上限 6K，避免 1 亿+像素的超大图
+        shortSide = Math.min(6000, maxCellPx);
       }
 
-      // 2. 预览 → 画布 的比例换算：间隙、圆角、背景色语义完全沿用预览端（k 只作用于间隙/圆角，不影响 cellSize 的推导）
-      var gridW = Math.max(1, Math.round(gridEl.getBoundingClientRect().width || 0));
-      var k;
-      if (gridW > 0) {
-        var gridBorderPx = 1;
-        var contentW = Math.max(1, gridW - 2*gridBorderPx - 2*outerGapCss);
-        var cellW = Math.max(1, Math.floor((contentW - (n-1)*cellGapCss) / n));
-        // 注意：这里 k 的目的是把"CSS 像素的间隙/圆角"按预览 cell 比例放大到画布
-        var cellTarget = Math.floor((baseOut - 2*outerGapCss - (n-1)*cellGapCss) / n);
-        k = cellTarget / Math.max(1, cellW);
+      // 2. 根据 W:H 比例算实际画布宽高：短边=shortSide，长边按比例延伸
+      var outW, outH;
+      if (ratio >= 1) {
+        // 横屏或方形：短边 = 高度
+        outH = shortSide;
+        outW = Math.max(1, Math.round(shortSide * ratio));
       } else {
-        k = baseOut / 2000;
+        // 竖屏：短边 = 宽度
+        outW = shortSide;
+        outH = Math.max(1, Math.round(shortSide / ratio));
       }
-      var cellGap = Math.max(0, Math.round(cellGapCss * k));
-      var outerGap = Math.max(0, Math.round(outerGapCss * k));
-      var radiusPx = Math.max(0, Math.round(radiusCss * k));
 
-      // 3. canvas 尺寸：严格保证 cellSize 完整 + 间隙/外边界正确，允许比 baseOut 大 1~2px 取整
-      var cellSize = Math.floor((baseOut - 2*outerGap - (n-1)*cellGap) / n);
-      if (cellSize < 1) cellSize = 1;
-      var outW = 2*outerGap + n*cellSize + (n-1)*cellGap;
-      var r = Math.min(radiusPx, Math.floor(cellSize / 2));
+      // 3. 预览端 → 画布端 比例换算（含预览矩形 cellW/cellH 分开）
+      var gridRect = null;
+      try { gridRect = gridEl.getBoundingClientRect ? gridEl.getBoundingClientRect() : null; } catch(_) {}
+      var previewW = Math.max(1, Math.round(gridRect ? (gridRect.width || 0) : 0));
+      var previewH = Math.max(1, Math.round(gridRect ? (gridRect.height || 0) : 0));
+      var gridBorderPx = 1;
+      var pxContW = Math.max(1, previewW - 2*gridBorderPx - 2*outerGapCss);
+      var pxContH = Math.max(1, previewH - 2*gridBorderPx - 2*outerGapCss);
+      var previewCellW = Math.max(1, Math.floor((pxContW - (n-1)*cellGapCss) / n));
+      var previewCellH = Math.max(1, Math.floor((pxContH - (n-1)*cellGapCss) / n));
+
+      // 先用临时值估算 canvasCell*，用于换算 k，再重算真实 cell*
+      var kAvg;
+      if (gridRect && previewW > 0 && previewH > 0) {
+        var scaleX = outW / previewW;
+        var scaleY = outH / previewH;
+        // 几何平均用于间隙/外边界（整体视觉放大比例）
+        kAvg = Math.sqrt(scaleX * scaleY);
+      } else {
+        kAvg = outW / 2000;
+      }
+      var cellGap = Math.max(0, Math.round(cellGapCss * kAvg));
+      var outerGap = Math.max(0, Math.round(outerGapCss * kAvg));
+
+      var cellW = Math.max(1, Math.floor((outW - 2*outerGap - (n-1)*cellGap) / n));
+      var cellH = Math.max(1, Math.floor((outH - 2*outerGap - (n-1)*cellGap) / n));
+      // 重新算出实际画布尺寸，保证 cell 数量正确，避免最后一格里的 1-2px 错位
+      outW = 2*outerGap + n*cellW + (n-1)*cellGap;
+      outH = 2*outerGap + n*cellH + (n-1)*cellGap;
+
+      // 圆角半径：按预览 cell 的宽/高比（哪个短）换算，保证圆角视觉一致
+      var kx = cellW / Math.max(1, previewCellW);
+      var ky = cellH / Math.max(1, previewCellH);
+      var kMin = Math.min(kx, ky);
+      var radiusPx = Math.max(0, Math.round(radiusCss * kMin));
+      var r = Math.min(radiusPx, Math.floor(cellW/2), Math.floor(cellH/2));
+
       var canvas = document.createElement('canvas');
-      canvas.width = outW; canvas.height = outW;
+      canvas.width = outW; canvas.height = outH;
       var ctx = canvas.getContext('2d');
-      // 显式开启高品质平滑：PNG 无损不影响，只抗锯齿让边缘不糊
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
 
-      // 工具：画圆角矩形路径（兼容旧浏览器手动描弧 + 直线）
       function roundRectPath(x, y, w, h, rr){
         rr = Math.min(rr, Math.floor(w/2), Math.floor(h/2));
         ctx.beginPath();
@@ -952,44 +1162,42 @@ body{
         ctx.closePath();
       }
 
-      // 第 1 层：整个画布填「间隙背景色」= 用户选的黑/白/自定义
+      // 第 1 层：整个画布填间隙背景色（用户选的黑/白/自定义）
       ctx.fillStyle = gapColorCss;
-      ctx.fillRect(0, 0, outW, outW);
+      ctx.fillRect(0, 0, outW, outH);
 
       for (var i = 0; i < n * n; i++){
         var col = i % n, row = Math.floor(i / n);
-        var x = outerGap + col * (cellSize + cellGap);
-        var y = outerGap + row * (cellSize + cellGap);
-        var found = results.find(function(r){ return r.idx === i; });
+        var x = outerGap + col * (cellW + cellGap);
+        var y = outerGap + row * (cellH + cellGap);
+        var found = results.find(function(rr){ return rr.idx === i; });
         var hasImg = !!(cells[i] && found && found.img && found.img.complete && found.img.naturalWidth>0);
 
-        // 第 2 层：cell 底色（--surface2 浅色）圆角填充 — 即使有图也先填，防止透明图漏背景
+        // 第 2 层：cell 底色圆角填充（--surface2）
         ctx.save();
-        roundRectPath(x, y, cellSize, cellSize, r);
+        roundRectPath(x, y, cellW, cellH, r);
         ctx.fillStyle = '#252532';
         ctx.fill();
         ctx.restore();
 
-        // 第 3 层：图片 cover 填充，裁剪在圆角矩形内
+        // 第 3 层：图片 cover 绘制，裁到圆角矩形
         if (hasImg){
           ctx.save();
-          roundRectPath(x, y, cellSize, cellSize, r);
+          roundRectPath(x, y, cellW, cellH, r);
           ctx.clip();
           var img = found.img;
           var iw = img.naturalWidth, ih = img.naturalHeight;
-          // 高保真：优先整像素对齐 scale → 再对齐中心（dx/dy 取整避免半像素采样）
-          var rawScale = Math.max(cellSize / iw, cellSize / ih);
-          var dw = Math.round(iw * rawScale);
-          var dh = Math.round(ih * rawScale);
-          var dx = Math.round(x + (cellSize - dw) / 2);
-          var dy = Math.round(y + (cellSize - dh) / 2);
+          // cover：按 cellW × cellH 为目标，取较大方向缩放比，保证整个 cell 填满
+          var s = Math.max(cellW / iw, cellH / ih);
+          var dw = Math.round(iw * s);
+          var dh = Math.round(ih * s);
+          var dx = Math.round(x + (cellW - dw) / 2);
+          var dy = Math.round(y + (cellH - dh) / 2);
           ctx.drawImage(img, dx, dy, dw, dh);
           ctx.restore();
         }
       }
 
-      // 关键修复：显式指定 image/png（无损、不做 chroma 下采样、透明/圆角保真）
-      // 第三个参数虽 PNG 不使用 quality 语义，但显式传 1 防止浏览器走"默认有损优化路径"
       canvas.toBlob(function(blob){
         if (!blob) { downloadBtn.disabled = false; return; }
         var url = URL.createObjectURL(blob);
@@ -1006,6 +1214,10 @@ body{
         else if (quality <= 2000) qTag = 'q2K';
         else if (quality <= 2800) qTag = 'q2_8K';
         else qTag = 'q3_6K';
+        // 比例 tag：ratio 用 formatRatioText 输出紧凑版 aXb（如 1x2 / 1x1 / 2x1 / 4x3 ...）
+        var ratioText = formatRatioText(ratio).replace(/\s*/g,'').replace(/:/g,'x');
+        var ratioTag = 'ratio' + ratioText;
+        tag.push(ratioTag);
         tag.push(qTag);
         var tagStr = tag.length ? ('_' + tag.join('_')) : '';
         var fileName = 'piccutter_' + n + 'x' + n + tagStr + '.png';
@@ -1124,6 +1336,14 @@ body{
   }
 
   buildGrid(3);
+  // 窗口尺寸变化时重新适配画布（contain 规则）
+  window.addEventListener('resize', function(){
+    try { fitGridToContainer(); } catch(_) {}
+  });
+  // 初始化完成后再执行一次，防止 DOMContentLoaded 时容器还没布局
+  if (document.readyState === 'complete') {
+    setTimeout(function(){ try { fitGridToContainer(); } catch(_) {} }, 50);
+  }
 
   /* ============== 网格缩放：滚轮 + 双指 pinch，以区域中心为锚点 ============== */
   var wrapInner = document.getElementById('gridWrapInner');
@@ -1170,6 +1390,9 @@ body{
   var tStartPanX = 0, tStartPanY = 0;
 
   wrapOuter.addEventListener('touchstart', function (e) {
+    // 如果事件命中 tabbar 内部控件（range/按钮/颜色选择），直接放行，不要被网格手势吞掉
+    var target = e.target && e.target.closest ? e.target.closest('.tabbar, .topbar, .hint, #saveOverlay, #cellActionMenu') : null;
+    if (target) return;
     touchMoved = false;
     if (e.touches.length >= 2) {
       var t1 = e.touches[0], t2 = e.touches[1];
@@ -1179,7 +1402,7 @@ body{
       pinchCenterY = (t1.clientY + t2.clientY) / 2;
       isPinching = true;
       isPanning = false;
-      e.preventDefault();
+      try { if (e.cancelable) e.preventDefault(); } catch (_) {}
     } else if (e.touches.length === 1) {
       if (!isPinching && gridScale > 1.01) {
         isPanning = true;
@@ -1191,6 +1414,9 @@ body{
   }, { passive: false });
 
   wrapOuter.addEventListener('touchmove', function (e) {
+    // 放过 tabbar/topbar 内的控件手势，避免滑动条拖不动
+    var target = e.target && e.target.closest ? e.target.closest('.tabbar, .topbar, .hint, #saveOverlay, #cellActionMenu') : null;
+    if (target) return;
     if (e.touches.length >= 2 && pinchStartDist > 0) {
       isPinching = true;
       var t1 = e.touches[0], t2 = e.touches[1];
