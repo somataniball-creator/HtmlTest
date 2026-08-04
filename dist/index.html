@@ -562,39 +562,43 @@ body{
     else if (px <= 2000) label = '标准 2K';
     else if (px <= 2800) label = '高清';
     else label = '超清 3.6K';
-    if (qualityLabelEl) qualityLabelEl.textContent = label;
+    if (qualityLabelEl) { try { qualityLabelEl.textContent = label; } catch(_) {} }
     document.querySelectorAll('.quality-btn').forEach(function(btn){
       var bq = +btn.getAttribute('data-quality');
-      btn.classList.toggle('active', bq === px);
+      try { btn.classList.toggle('active', bq === px); } catch(_) {}
     });
   }
 
   document.addEventListener('DOMContentLoaded', initGapControl, { once: true });
   function initGapControl(){
-    cellGapRangeEl = document.getElementById('cellGapRange');
-    cellGapValueEl = document.getElementById('cellGapValue');
-    outerGapRangeEl = document.getElementById('outerGapRange');
-    outerGapValueEl = document.getElementById('outerGapValue');
-    radiusRangeEl = document.getElementById('radiusRange');
-    radiusValueEl = document.getElementById('radiusValue');
-    gapColorPickerEl = document.getElementById('gapColorPicker');
-    gapColorLabelEl = document.getElementById('gapColorLabel');
-    qualityLabelEl = document.getElementById('qualityLabel');
-    if (cellGapRangeEl) cellGapRangeEl.addEventListener('input', function(){ setCellGap(+this.value); });
-    if (outerGapRangeEl) outerGapRangeEl.addEventListener('input', function(){ setOuterGap(+this.value); });
-    if (radiusRangeEl) radiusRangeEl.addEventListener('input', function(){ setRadius(+this.value); });
-    if (gapColorPickerEl) gapColorPickerEl.addEventListener('input', function(){ setGapColor(this.value, true); });
-    document.querySelectorAll('.gap-color-btn').forEach(function(btn){
-      btn.addEventListener('click', function(){ setGapColor(this.getAttribute('data-gap-color') || '#1a1a24'); });
-    });
-    document.querySelectorAll('.quality-btn').forEach(function(btn){
-      btn.addEventListener('click', function(){ setQuality(+this.getAttribute('data-quality') || 2800); });
-    });
-    setCellGap(0);
-    setOuterGap(0);
-    setRadius(0);
-    setGapColor('#1a1a24');
-    setQuality(2800);
+    try {
+      cellGapRangeEl = document.getElementById('cellGapRange');
+      cellGapValueEl = document.getElementById('cellGapValue');
+      outerGapRangeEl = document.getElementById('outerGapRange');
+      outerGapValueEl = document.getElementById('outerGapValue');
+      radiusRangeEl = document.getElementById('radiusRange');
+      radiusValueEl = document.getElementById('radiusValue');
+      gapColorPickerEl = document.getElementById('gapColorPicker');
+      gapColorLabelEl = document.getElementById('gapColorLabel');
+      qualityLabelEl = document.getElementById('qualityLabel');
+      if (cellGapRangeEl) cellGapRangeEl.addEventListener('input', function(){ setCellGap(+this.value); });
+      if (outerGapRangeEl) outerGapRangeEl.addEventListener('input', function(){ setOuterGap(+this.value); });
+      if (radiusRangeEl) radiusRangeEl.addEventListener('input', function(){ setRadius(+this.value); });
+      if (gapColorPickerEl) gapColorPickerEl.addEventListener('input', function(){ setGapColor(this.value, true); });
+      document.querySelectorAll('.gap-color-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){ setGapColor(this.getAttribute('data-gap-color') || '#1a1a24'); });
+      });
+      document.querySelectorAll('.quality-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){ setQuality(+this.getAttribute('data-quality') || 2800); });
+      });
+      setCellGap(0);
+      setOuterGap(0);
+      setRadius(0);
+      setGapColor('#1a1a24');
+      setQuality(2800);
+    } catch (e) {
+      try { console.warn('[PicCutter] initGapControl:', e && e.message); } catch(_) {}
+    }
   }
   if (document.readyState === 'complete' || document.readyState === 'interactive'){
     setTimeout(initGapControl, 0);
@@ -842,12 +846,14 @@ body{
     });
   });
 
-  // 网格尺寸按钮
-  document.querySelectorAll('.panel-btn').forEach(function(btn){
+  // 网格尺寸按钮（只处理带 data-size 的按钮，不要与清晰度按钮冲突）
+  document.querySelectorAll('.panel-btn[data-size]').forEach(function(btn){
     btn.addEventListener('click',function(){
-      document.querySelectorAll('.panel-btn').forEach(function(b){b.classList.remove('active')});
+      var n = parseInt(this.dataset.size, 10);
+      if (isNaN(n)) return;
+      document.querySelectorAll('.panel-btn[data-size]').forEach(function(b){b.classList.remove('active')});
       this.classList.add('active');
-      buildGrid(parseInt(this.dataset.size));
+      buildGrid(n);
     });
   });
 
