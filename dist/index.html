@@ -24,8 +24,8 @@
   --cell-radius:0px;
   --gap-color:#1a1a24;
   --toolbar-h:56px;
-  --tabbar-h:260px;
-  --tabbar-tab-h:50px;
+  --tabbar-h:230px;
+  --tabbar-tab-h:44px;
 }
 html,body{width:100%;height:100%;overflow:hidden}
 body{
@@ -165,24 +165,43 @@ body{
   flex-shrink:0;
   display:flex;
   flex-direction:column;
-  /* 去掉页签后，单一滚动容器承载全部内容 */
   overflow:hidden;
 }
-.tabbar-scroll{
-  flex:1;
-  overflow-y:auto;
-  overflow-x:hidden;
-  padding:12px 16px 16px;
+.tabbar-tabs{
   display:flex;
-  flex-direction:column;
-  gap:12px;
-  scrollbar-width:thin;
-  scrollbar-color:var(--border) transparent;
-  -webkit-overflow-scrolling:touch;
+  height:var(--tabbar-tab-h);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
 }
-.tabbar-scroll::-webkit-scrollbar{width:6px}
-.tabbar-scroll::-webkit-scrollbar-track{background:transparent}
-.tabbar-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.tabbar-tab{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  background:none;
+  border:none;
+  border-bottom:2px solid transparent;
+  color:var(--text-dim);
+  cursor:pointer;
+  font-size:.85rem;
+  font-weight:600;
+  letter-spacing:.5px;
+  transition:all .15s;
+}
+.tabbar-tab.active{
+  color:var(--text);
+  border-bottom-color:var(--accent);
+}
+.tabbar-panel{
+  flex:1;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:8px 14px 10px;
+  overflow:hidden;
+}
+.tabbar-panel.active{display:flex}
 
 .tabbar-row{
   display:flex;
@@ -190,20 +209,41 @@ body{
   gap:8px;
   flex-wrap:wrap;
 }
-.tabbar-slider{
+.tabbar-slider-val{
+  font-size:.82rem;
+  color:var(--text);
+  font-weight:600;
+  min-width:42px;
+  text-align:right;
+}
+
+/* 相框样式 2x2 grid：一行两个滑动条，空间压缩 */
+.frame-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px 14px;
+  width:100%;
+  max-width:640px;
+}
+.frame-slider,
+.frame-color{
   display:flex;
   flex-direction:column;
-  gap:6px;
+  gap:4px;
+  min-width:0;
 }
-.tabbar-slider-head{
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
+.frame-slider-head,
+.frame-color .frame-slider-head{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
 }
-.tabbar-slider-row{
-  display:flex;align-items:center;gap:12px;width:100%;
+.frame-slider-body,
+.frame-color-body{
+  display:flex;align-items:center;gap:8px;width:100%;
 }
-.tabbar-slider-row input[type=range]{
+.frame-slider-body input[type=range],
+.frame-color-body input[type=range]{
   flex:1;
-  height:6px;
+  height:5px;
   -webkit-appearance:none;
   appearance:none;
   background:var(--surface2);
@@ -211,31 +251,31 @@ body{
   outline:none;
   cursor:pointer;
   accent-color:var(--accent);
+  min-width:0;
 }
-.tabbar-slider-val{
-  font-size:.85rem;
-  color:var(--text);
-  font-weight:600;
-  min-width:42px;
-  text-align:right;
+.range-tick{
+  font-size:.72rem;
+  color:var(--text-dim);
+  white-space:nowrap;
 }
 
-/* 间隙背景色 按钮：统一 26px + 外框，不再 inline style */
+/* 间隙背景色 按钮：统一 22px，更紧凑 */
 .gap-color-btn{
-  width:26px;height:26px;
-  border-radius:8px;
+  width:22px;height:22px;
+  border-radius:6px;
   border:2px solid #fff;
   box-shadow:0 0 0 1px var(--border);
   cursor:pointer;
   padding:0;
   line-height:1;
+  flex-shrink:0;
 }
 .gap-color-btn[data-gap-color="#000000"]{background:#000}
 .gap-color-btn[data-gap-color="#ffffff"]{background:#fff}
 .gap-color-custom{
   position:relative;
-  width:26px;height:26px;
-  border-radius:8px;
+  width:22px;height:22px;
+  border-radius:6px;
   border:2px solid #fff;
   box-shadow:0 0 0 1px var(--border);
   background:conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
@@ -243,6 +283,7 @@ body{
   display:inline-block;
   padding:0;
   overflow:hidden;
+  flex-shrink:0;
 }
 .gap-color-custom input[type=color]{
   position:absolute;inset:0;
@@ -251,21 +292,47 @@ body{
   border:0;padding:0;margin:0;
 }
 
-.panel-label{font-size:.8rem;color:var(--text-dim);margin-right:4px}
+.panel-label{font-size:.78rem;color:var(--text-dim);margin-right:4px}
 .panel-btn{
-  padding:8px 16px;
+  padding:7px 14px;
   background:var(--surface2);
   border:1px solid var(--border);
   border-radius:8px;
   color:var(--text);
   cursor:pointer;
-  font-size:.85rem;
-  font-weight:500;
+  font-size:.82rem;
+  font-weight:600;
   transition:all .15s;
 }
 .panel-btn:hover{background:var(--border);border-color:var(--accent)}
 .panel-btn.active{background:var(--accent);border-color:var(--accent)}
 .placeholder-text{font-size:.8rem;color:var(--text-dim)}
+
+/* 输出设置页签 */
+.output-cols{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  width:100%;
+  max-width:560px;
+  padding:4px 0;
+}
+.output-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  width:100%;
+  flex-wrap:wrap;
+}
+.output-tip{
+  font-size:.72rem;
+  color:var(--text-dim);
+  text-align:center;
+  line-height:1.4;
+}
 
 .hint{
   position:fixed;bottom:calc(var(--tabbar-h) + 8px);left:50%;transform:translateX(-50%);
@@ -275,7 +342,7 @@ body{
 }
 
 @media(max-width:600px){
-  :root{--toolbar-h:48px;--tabbar-h:200px}
+  :root{--toolbar-h:48px;--tabbar-h:200px;--tabbar-tab-h:38px}
   .topbar{padding:0 10px}
   .topbar-left{gap:10px}
   .logo{font-size:.85rem}
@@ -285,9 +352,14 @@ body{
   .grid{width:calc(100vh - var(--toolbar-h) - var(--tabbar-h) - 12px);max-width:calc(100vw - 12px)}
   .cell .placeholder{font-size:.65rem}
   .cell .placeholder svg{width:18px;height:18px}
+  .tabbar-tab{font-size:.72rem;letter-spacing:0;font-weight:500;padding:0 4px}
   .panel-btn{padding:6px 10px;font-size:.75rem}
   .panel-label{font-size:.7rem}
-  .tabbar-scroll{padding:10px 12px 12px;gap:10px}
+  .frame-grid{gap:6px 10px}
+  .frame-slider-val{font-size:.75rem}
+  .range-tick{font-size:.68rem}
+  .tabbar-slider-val{font-size:.75rem;min-width:36px}
+  .gap-color-btn,.gap-color-custom{width:20px;height:20px;border-radius:5px}
   .hint{font-size:.65rem;padding:5px 10px}
 }
 </style>
@@ -297,7 +369,7 @@ body{
 <!-- 顶部工具栏 -->
 <div class="topbar">
   <div class="topbar-left">
-    <div class="logo">Pic<span>Cutter</span><span style="color:var(--text-dim);font-size:.7rem;margin-left:6px;font-weight:400;letter-spacing:0">v1.1</span></div>
+    <div class="logo">Pic<span>Cutter</span><span style="color:var(--text-dim);font-size:.7rem;margin-left:6px;font-weight:400;letter-spacing:0">v1.4</span></div>
     <span class="count-info" id="countInfo">0 / 9</span>
   </div>
   <div class="topbar-right">
@@ -313,61 +385,85 @@ body{
   </div>
 </div>
 
-<!-- 底部选项栏：无页签，单区域纵向滚动，网格+比例选项全部整合 -->
+<!-- 底部选项栏：三个页签 + 相框样式一行两个滑动条压缩空间 -->
 <div class="tabbar">
-  <div class="tabbar-scroll">
-    <div class="tabbar-row">
+  <div class="tabbar-tabs">
+    <button class="tabbar-tab active" data-tab="layout">拼接方式</button>
+    <button class="tabbar-tab" data-tab="frame">相框样式</button>
+    <button class="tabbar-tab" data-tab="output">输出设置</button>
+  </div>
+  <div class="tabbar-panel active" data-panel="layout">
+    <div class="tabbar-row" style="justify-content:center;width:100%">
       <span class="panel-label">网格</span>
       <button class="panel-btn" data-size="2">2×2</button>
       <button class="panel-btn active" data-size="3">3×3</button>
       <button class="panel-btn" data-size="4">4×4</button>
     </div>
-
-    <div class="tabbar-slider">
-      <div class="tabbar-slider-head">
-        <span class="panel-label" style="margin:0">图片之间</span>
-        <span id="cellGapValue" class="tabbar-slider-val">0 px</span>
+  </div>
+  <div class="tabbar-panel" data-panel="frame">
+    <div class="frame-grid">
+      <div class="frame-slider">
+        <div class="frame-slider-head">
+          <span class="panel-label" style="margin:0">图片之间</span>
+          <span id="cellGapValue" class="tabbar-slider-val">0 px</span>
+        </div>
+        <div class="frame-slider-body">
+          <span class="range-tick">0</span>
+          <input type="range" id="cellGapRange" min="0" max="60" value="0" step="1">
+          <span class="range-tick">60</span>
+        </div>
       </div>
-      <div class="tabbar-slider-row">
-        <span class="panel-label" style="margin:0;white-space:nowrap">0</span>
-        <input type="range" id="cellGapRange" min="0" max="60" value="0" step="1">
-        <span class="panel-label" style="margin:0;white-space:nowrap">60</span>
+      <div class="frame-slider">
+        <div class="frame-slider-head">
+          <span class="panel-label" style="margin:0">外边界</span>
+          <span id="outerGapValue" class="tabbar-slider-val">0 px</span>
+        </div>
+        <div class="frame-slider-body">
+          <span class="range-tick">0</span>
+          <input type="range" id="outerGapRange" min="0" max="80" value="0" step="1">
+          <span class="range-tick">80</span>
+        </div>
+      </div>
+      <div class="frame-slider">
+        <div class="frame-slider-head">
+          <span class="panel-label" style="margin:0">圆角</span>
+          <span id="radiusValue" class="tabbar-slider-val">0 px</span>
+        </div>
+        <div class="frame-slider-body">
+          <span class="range-tick">0</span>
+          <input type="range" id="radiusRange" min="0" max="60" value="0" step="1">
+          <span class="range-tick">60</span>
+        </div>
+      </div>
+      <div class="frame-color">
+        <div class="frame-slider-head">
+          <span class="panel-label" style="margin:0">背景色</span>
+        </div>
+        <div class="frame-color-body">
+          <button type="button" data-gap-color="#000000" class="gap-color-btn" title="纯黑"></button>
+          <button type="button" data-gap-color="#ffffff" class="gap-color-btn" title="纯白"></button>
+          <label class="gap-color-custom" title="自定义颜色">
+            <input type="color" id="gapColorPicker" value="#1a1a24">
+          </label>
+          <span id="gapColorLabel" class="tabbar-slider-val" style="margin-left:4px">#1A1A24</span>
+        </div>
       </div>
     </div>
-
-    <div class="tabbar-slider">
-      <div class="tabbar-slider-head">
-        <span class="panel-label" style="margin:0">外边界</span>
-        <span id="outerGapValue" class="tabbar-slider-val">0 px</span>
+  </div>
+  <div class="tabbar-panel" data-panel="output">
+    <div class="output-cols">
+      <div class="output-row">
+        <span class="panel-label" style="margin:0">输出清晰度</span>
+        <span id="qualityLabel" class="tabbar-slider-val" style="min-width:64px">高清</span>
       </div>
-      <div class="tabbar-slider-row">
-        <span class="panel-label" style="margin:0;white-space:nowrap">0</span>
-        <input type="range" id="outerGapRange" min="0" max="80" value="0" step="1">
-        <span class="panel-label" style="margin:0;white-space:nowrap">80</span>
+      <div class="output-row" style="gap:6px">
+        <button type="button" class="quality-btn panel-btn" data-quality="2000" style="padding:5px 10px;font-size:.75rem">标准 2K</button>
+        <button type="button" class="quality-btn panel-btn active" data-quality="2800" style="padding:5px 10px;font-size:.75rem">高清 2.8K</button>
+        <button type="button" class="quality-btn panel-btn" data-quality="3600" style="padding:5px 10px;font-size:.75rem">超清 3.6K</button>
+        <button type="button" class="quality-btn panel-btn" data-quality="0" style="padding:5px 10px;font-size:.75rem">原图级</button>
       </div>
-    </div>
-
-    <div class="tabbar-slider">
-      <div class="tabbar-slider-head">
-        <span class="panel-label" style="margin:0">圆角</span>
-        <span id="radiusValue" class="tabbar-slider-val">0 px</span>
-      </div>
-      <div class="tabbar-slider-row">
-        <span class="panel-label" style="margin:0;white-space:nowrap">0</span>
-        <input type="range" id="radiusRange" min="0" max="60" value="0" step="1">
-        <span class="panel-label" style="margin:0;white-space:nowrap">60</span>
-      </div>
-    </div>
-
-    <div class="tabbar-row" style="align-items:center;justify-content:space-between;gap:12px">
-      <span class="panel-label" style="margin:0">间隙背景色</span>
-      <div style="display:flex;align-items:center;gap:8px">
-        <button type="button" data-gap-color="#000000" class="gap-color-btn" title="纯黑"></button>
-        <button type="button" data-gap-color="#ffffff" class="gap-color-btn" title="纯白"></button>
-        <label class="gap-color-custom" title="自定义颜色">
-          <input type="color" id="gapColorPicker" value="#1a1a24">
-        </label>
-        <span id="gapColorLabel" class="tabbar-slider-val">#1A1A24</span>
+      <div class="output-tip">
+        PNG 无损格式 · 高清为默认推荐档
       </div>
     </div>
   </div>
@@ -391,10 +487,12 @@ body{
   var currentOuterGap = 0;  // 图片与外边界
   var currentRadius = 0;    // 单张图片圆角
   var currentGapColor = '#1a1a24';  // 间隙背景色（grid背景）
+  var currentQuality = 2800; // 输出清晰度：0=原图级，>0=目标短边像素
   var cellGapRangeEl = null, cellGapValueEl = null;
   var outerGapRangeEl = null, outerGapValueEl = null;
   var radiusRangeEl = null, radiusValueEl = null;
   var gapColorPickerEl = null, gapColorLabelEl = null;
+  var qualityLabelEl = null;
 
   function toHexColor(c){
     c = (c || '').trim().toLowerCase();
@@ -446,7 +544,6 @@ body{
     document.documentElement.style.setProperty('--gap-color', hex);
     if (gapColorLabelEl) gapColorLabelEl.textContent = hex.toUpperCase();
     if (!fromPicker && gapColorPickerEl) gapColorPickerEl.value = hex;
-    // 按钮选中态：当前匹配 data-gap-color 的加 ring，其余去掉
     document.querySelectorAll('.gap-color-btn').forEach(function(btn){
       var bc = toHexColor(btn.getAttribute('data-gap-color') || '');
       if (bc === hex) {
@@ -454,6 +551,21 @@ body{
       } else {
         btn.style.boxShadow = '0 0 0 1px var(--border)';
       }
+    });
+  }
+  function setQuality(px){
+    px = (px === 0 || px > 0) ? Math.floor(px) : 2800;
+    if (px > 6000) px = 6000; // 安全上限：避免 4 亿+像素手机原图
+    currentQuality = px;
+    var label = '高清';
+    if (px === 0) label = '原图级';
+    else if (px <= 2000) label = '标准 2K';
+    else if (px <= 2800) label = '高清';
+    else label = '超清 3.6K';
+    if (qualityLabelEl) qualityLabelEl.textContent = label;
+    document.querySelectorAll('.quality-btn').forEach(function(btn){
+      var bq = +btn.getAttribute('data-quality');
+      btn.classList.toggle('active', bq === px);
     });
   }
 
@@ -467,6 +579,7 @@ body{
     radiusValueEl = document.getElementById('radiusValue');
     gapColorPickerEl = document.getElementById('gapColorPicker');
     gapColorLabelEl = document.getElementById('gapColorLabel');
+    qualityLabelEl = document.getElementById('qualityLabel');
     if (cellGapRangeEl) cellGapRangeEl.addEventListener('input', function(){ setCellGap(+this.value); });
     if (outerGapRangeEl) outerGapRangeEl.addEventListener('input', function(){ setOuterGap(+this.value); });
     if (radiusRangeEl) radiusRangeEl.addEventListener('input', function(){ setRadius(+this.value); });
@@ -474,10 +587,14 @@ body{
     document.querySelectorAll('.gap-color-btn').forEach(function(btn){
       btn.addEventListener('click', function(){ setGapColor(this.getAttribute('data-gap-color') || '#1a1a24'); });
     });
+    document.querySelectorAll('.quality-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){ setQuality(+this.getAttribute('data-quality') || 2800); });
+    });
     setCellGap(0);
     setOuterGap(0);
     setRadius(0);
     setGapColor('#1a1a24');
+    setQuality(2800);
   }
   if (document.readyState === 'complete' || document.readyState === 'interactive'){
     setTimeout(initGapControl, 0);
@@ -713,6 +830,18 @@ body{
     cells=cells.map(function(){return null});render();updateCount();
   });
 
+  // Tab 切换（拼接方式 / 相框样式）
+  document.querySelectorAll('.tabbar-tab').forEach(function(tab){
+    tab.addEventListener('click',function(){
+      var tabName=this.dataset.tab;
+      document.querySelectorAll('.tabbar-tab').forEach(function(t){t.classList.remove('active')});
+      document.querySelectorAll('.tabbar-panel').forEach(function(p){p.classList.remove('active')});
+      this.classList.add('active');
+      var panel = document.querySelector('.tabbar-panel[data-panel="'+tabName+'"]');
+      if (panel) panel.classList.add('active');
+    });
+  });
+
   // 网格尺寸按钮
   document.querySelectorAll('.panel-btn').forEach(function(btn){
     btn.addEventListener('click',function(){
@@ -742,19 +871,40 @@ body{
     });
 
     Promise.all(tasks).then(function(results){
-      var baseOut = 2400, n = currentSize;
+      var n = currentSize;
       var cellGapCss = Math.max(0, Math.min(60, Math.floor(currentCellGap)));
       var outerGapCss = Math.max(0, Math.min(80, Math.floor(currentOuterGap)));
       var radiusCss = Math.max(0, Math.min(60, Math.floor(currentRadius)));
       var gapColorCss = toHexColor(currentGapColor || '#1a1a24');
+      var quality = (currentQuality > 6000) ? 6000 : (currentQuality >= 0 ? currentQuality : 2800);
 
-      // —— 预览 → 画布 的比例换算：间隙、圆角、背景色语义完全沿用预览端 ——
+      // 1. 确定基准尺寸：quality>0 直接用；quality=0 按所有填图格的 "cover 目标像素最大值" 推导，保证不小于原图
+      var baseOut;
+      if (quality > 0) {
+        baseOut = quality;
+      } else {
+        var maxCellPx = 0;
+        results.forEach(function(r){
+          if (r && r.img && r.img.naturalWidth>0 && r.img.naturalHeight>0) {
+            // cover 下该图至少需要的单边像素 = min(图宽, 图高)
+            var s = Math.min(r.img.naturalWidth, r.img.naturalHeight);
+            if (s > maxCellPx) maxCellPx = s;
+          }
+        });
+        if (maxCellPx < 1) maxCellPx = 2000;
+        // 图级导出：总边 = n*cell + (n-1)*cellGapCss + 2*outerGapCss（cellGap/outerGap按预览css像素比等价放大）
+        var est = Math.ceil(maxCellPx * n + Math.max(0,(n-1)) * cellGapCss + 2 * outerGapCss);
+        baseOut = Math.min(6000, est); // 安全上限 6K，避免 1 亿+像素的超大图
+      }
+
+      // 2. 预览 → 画布 的比例换算：间隙、圆角、背景色语义完全沿用预览端（k 只作用于间隙/圆角，不影响 cellSize 的推导）
       var gridW = Math.max(1, Math.round(gridEl.getBoundingClientRect().width || 0));
       var k;
       if (gridW > 0) {
         var gridBorderPx = 1;
         var contentW = Math.max(1, gridW - 2*gridBorderPx - 2*outerGapCss);
         var cellW = Math.max(1, Math.floor((contentW - (n-1)*cellGapCss) / n));
+        // 注意：这里 k 的目的是把"CSS 像素的间隙/圆角"按预览 cell 比例放大到画布
         var cellTarget = Math.floor((baseOut - 2*outerGapCss - (n-1)*cellGapCss) / n);
         k = cellTarget / Math.max(1, cellW);
       } else {
@@ -764,7 +914,7 @@ body{
       var outerGap = Math.max(0, Math.round(outerGapCss * k));
       var radiusPx = Math.max(0, Math.round(radiusCss * k));
 
-      // canvas 总尺寸 + 每格尺寸（按预览的「cell : gap : outer : radius」相对比例）
+      // 3. canvas 尺寸：严格保证 cellSize 完整 + 间隙/外边界正确，允许比 baseOut 大 1~2px 取整
       var cellSize = Math.floor((baseOut - 2*outerGap - (n-1)*cellGap) / n);
       if (cellSize < 1) cellSize = 1;
       var outW = 2*outerGap + n*cellSize + (n-1)*cellGap;
@@ -772,6 +922,7 @@ body{
       var canvas = document.createElement('canvas');
       canvas.width = outW; canvas.height = outW;
       var ctx = canvas.getContext('2d');
+      // 显式开启高品质平滑：PNG 无损不影响，只抗锯齿让边缘不糊
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
 
@@ -801,35 +952,38 @@ body{
 
       for (var i = 0; i < n * n; i++){
         var col = i % n, row = Math.floor(i / n);
-        // 精确对应 CSS 网格：padding outerGap + 每格 cellSize 中间夹 cellGap
         var x = outerGap + col * (cellSize + cellGap);
         var y = outerGap + row * (cellSize + cellGap);
         var found = results.find(function(r){ return r.idx === i; });
         var hasImg = !!(cells[i] && found && found.img && found.img.complete && found.img.naturalWidth>0);
 
-        // 第 2 层：cell 底色（--surface2 浅色）和预览 .cell background 一致，圆角
+        // 第 2 层：cell 底色（--surface2 浅色）圆角填充 — 即使有图也先填，防止透明图漏背景
         ctx.save();
         roundRectPath(x, y, cellSize, cellSize, r);
         ctx.fillStyle = '#252532';
         ctx.fill();
         ctx.restore();
 
-        // 第 3 层：图片 cover 填充，严格裁剪在「圆角矩形」范围内（对应 CSS border-radius + overflow:hidden）
+        // 第 3 层：图片 cover 填充，裁剪在圆角矩形内
         if (hasImg){
           ctx.save();
           roundRectPath(x, y, cellSize, cellSize, r);
           ctx.clip();
           var img = found.img;
           var iw = img.naturalWidth, ih = img.naturalHeight;
-          var scale = Math.max(cellSize / iw, cellSize / ih);
-          var dw = iw * scale, dh = ih * scale;
-          var dx = x + (cellSize - dw) / 2, dy = y + (cellSize - dh) / 2;
+          // 高保真：优先整像素对齐 scale → 再对齐中心（dx/dy 取整避免半像素采样）
+          var rawScale = Math.max(cellSize / iw, cellSize / ih);
+          var dw = Math.round(iw * rawScale);
+          var dh = Math.round(ih * rawScale);
+          var dx = Math.round(x + (cellSize - dw) / 2);
+          var dy = Math.round(y + (cellSize - dh) / 2);
           ctx.drawImage(img, dx, dy, dw, dh);
           ctx.restore();
         }
       }
 
-      // 输出：间隙/圆角/背景色 按预览比例；文件名带 c/o/r/bg 四组
+      // 关键修复：显式指定 image/png（无损、不做 chroma 下采样、透明/圆角保真）
+      // 第三个参数虽 PNG 不使用 quality 语义，但显式传 1 防止浏览器走"默认有损优化路径"
       canvas.toBlob(function(blob){
         if (!blob) { downloadBtn.disabled = false; return; }
         var url = URL.createObjectURL(blob);
@@ -837,10 +991,16 @@ body{
         if (cellGapCss>0) tag.push('c'+cellGapCss);
         if (outerGapCss>0) tag.push('o'+outerGapCss);
         if (radiusCss>0)  tag.push('r'+radiusCss);
-        var hx = (gapColorCss || '#1a1a24').replace('#','').toUpperCase();
+        var hx = gapColorCss.replace('#','').toUpperCase();
         if (hx === '000000') tag.push('bgBLACK');
         else if (hx === 'FFFFFF') tag.push('bgWHITE');
         else tag.push('bg'+hx);
+        var qTag;
+        if (quality === 0) qTag = 'qORIGINAL';
+        else if (quality <= 2000) qTag = 'q2K';
+        else if (quality <= 2800) qTag = 'q2_8K';
+        else qTag = 'q3_6K';
+        tag.push(qTag);
         var tagStr = tag.length ? ('_' + tag.join('_')) : '';
         var fileName = 'piccutter_' + n + 'x' + n + tagStr + '.png';
 
@@ -874,7 +1034,7 @@ body{
           document.body.removeChild(a);
           setTimeout(function(){ URL.revokeObjectURL(url); downloadBtn.disabled = false; }, 2000);
         }
-      }, 'image/png');
+      }, 'image/png', 1.0);
     });
   }
 
